@@ -1,0 +1,1612 @@
+import { StreetCorridor, WalkPlace } from '../types/walk';
+
+/**
+ * 30 Verified Greater Melbourne Dog Beaches, Fenced Dog Parks, Reserves & Trails
+ * spanning Inner, Bayside, West, North, East, South-East & Mornington Peninsula.
+ */
+export const MELBOURNE_PILOT_SPOTS: WalkPlace[] = [
+  // === 6 Off-Leash Dog Beaches (Year-Round & Seasonal Timed) ===
+  {
+    id: 'mel-brighton-beach',
+    name: 'Brighton Dog Beach (Sandown St)',
+    subtitle: 'Brighton 3186 · 24h Fenced Bay Dog Beach',
+    district: 'Inner South & Bayside',
+    category: 'dog_beach',
+    latitude: -37.9082,
+    longitude: 144.9862,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'Sandown St Foreshore Gate · Pay-and-display lot on Esplanade (opposite Sandown St)',
+    petPerks:
+      'Fully fenced roadside boundary, shallow calm bay waves, fresh dog-rinse tap & Bay Trail coffee kiosks.',
+    crowdAndSurfaceTip:
+      'Dry sand gets hot above 26°C — stick to the wet shoreline or visit before 10:00 AM on summer weekends.',
+    routePath: [
+      [-37.9068, 144.9859],
+      [-37.9082, 144.9862],
+      [-37.9097, 144.9866],
+    ],
+  },
+  {
+    id: 'mel-stkilda-west-beach',
+    name: 'St Kilda West Dog Beach',
+    subtitle: 'St Kilda West 3182 · 24h Off-Leash Sand & Shallow Bay',
+    district: 'Inner',
+    category: 'dog_beach',
+    latitude: -37.8618,
+    longitude: 144.9665,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'Pier Rd Boardwalk Ramp · West Beach Pavilion Car Park (330A Beaconsfield Pde)',
+    petPerks:
+      'Wide flat sandbar, dog-friendly outdoor deck at West Beach Pavilion & rinse shower by boardwalk.',
+    crowdAndSurfaceTip:
+      'Keep clear of the fenced Little Penguin & dune conservation zone at the breakwater end.',
+    routePath: [
+      [-37.8602, 144.9648],
+      [-37.8618, 144.9665],
+      [-37.8634, 144.9684],
+    ],
+  },
+  {
+    id: 'mel-port-melbourne-beach',
+    name: 'Port Melbourne Dog Beach',
+    subtitle: 'Port Melbourne 3207 · Lagoon Pier to Brooks Jetty',
+    district: 'Inner',
+    category: 'dog_beach',
+    latitude: -37.8442,
+    longitude: 144.9445,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'lit'],
+    accessRule: 'timed_beach',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    seasonalSummerWindows: [
+      [0, 9],
+      [19.5, 24],
+    ],
+    hoursLabel: 'Apr–Oct 24h · Nov–Mar 19:30–09:00 Off-Leash',
+    entryDetail:
+      'Lagoon Pier Beach Access · Beaconsfield Pde Kerbside Parking (by Rouse St)',
+    petPerks:
+      'Calm bay water, paved foreshore promenade & Bay St dog-friendly cafés 5 min away.',
+    crowdAndSurfaceTip:
+      'Nov 1–Mar 31 off-leash is strictly before 09:00 and after 19:30 (Apr–Oct is 24h off-leash).',
+  },
+  {
+    id: 'mel-altona-dog-beach',
+    name: 'Altona Dog Beach (P.A. Burns Reserve)',
+    subtitle: 'Altona 3018 · Iconic Low-Tide Sandbar & Dog Wash',
+    district: 'West',
+    category: 'dog_beach',
+    latitude: -37.8686,
+    longitude: 144.8478,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'P.A. Burns Reserve Car Park · 85 Altona Rd (Direct path to dog wash & beach)',
+    petPerks:
+      'Dedicated dual-hose concrete dog wash bay, grassy reserve & huge shallow tidal sandflats.',
+    crowdAndSurfaceTip:
+      'Best at low tide when the sandbars stretch 200m out; keep on-leash along the shared bike path.',
+  },
+  {
+    id: 'mel-mentone-dog-beach',
+    name: 'Mentone Dog Beach',
+    subtitle: 'Mentone 3194 · Charman Rd to Plummer Rd Foreshore',
+    district: 'Inner South & Bayside',
+    category: 'dog_beach',
+    latitude: -37.9888,
+    longitude: 145.0642,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water'],
+    accessRule: 'timed_beach',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    seasonalSummerWindows: [
+      [0, 10],
+      [19.5, 24],
+    ],
+    hoursLabel: 'Apr–Oct 24h · Nov–Mar before 10:00 & after 19:30',
+    entryDetail:
+      'Charman Rd Cliff Ramp · Beach Rd Foreshore Car Park (Mentone Lifesaving Precinct)',
+    petPerks:
+      'Long sandy stretch, gentle bay swell & shaded clifftop walking trail above.',
+    crowdAndSurfaceTip:
+      'During summer daylight saving (Nov–Mar), dogs are off-leash before 10:00 AM and after 7:30 PM.',
+  },
+  {
+    id: 'mel-tassells-cove',
+    name: 'Tassells Cove Dog Beach',
+    subtitle: 'Safety Beach 3936 · Sheltered Peninsula Cove',
+    district: 'Mornington Peninsula',
+    category: 'dog_beach',
+    latitude: -38.3168,
+    longitude: 144.9896,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'Marine Dr Stair Access · Tassells Cove Roadside Parking Bays (Safety Beach)',
+    petPerks:
+      'Crystal-clear sheltered cove enclosed by rocky headlands — ideal for water-shy or small dogs.',
+    crowdAndSurfaceTip:
+      'Compact sand cove fills quickly on sunny January mornings; early morning swim is magic.',
+  },
+
+  // === 24 Fenced Dog Parks, Reserves & Shaded Trails Across All Melbourne Regions ===
+  {
+    id: 'mel-edinburgh-gardens',
+    name: 'Edinburgh Gardens Off-Leash Oval',
+    subtitle: 'Fitzroy North 3068 · Inner North Social Hub',
+    district: 'Inner',
+    category: 'park',
+    latitude: -37.7866,
+    longitude: 144.987,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open (Northern Half Off-Leash)',
+    entryDetail:
+      'Alfred Cres & St Georges Rd Elm Avenue · Kerbside parking on Alfred Cres',
+    petPerks:
+      'Mature elm shade avenues, water bubblers with dog bowls & Piedimonte’s / Fitzroy North cafés nearby.',
+    crowdAndSurfaceTip:
+      'Northern half north of Reid St path is off-leash; southern rotunda lawns & playgrounds are on-leash.',
+  },
+  {
+    id: 'mel-clayton-reserve',
+    name: 'Clayton Reserve Fenced Dog Park',
+    subtitle: 'North Melbourne 3051 · Fully Enclosed Inner-City Run',
+    district: 'Inner',
+    category: 'dog_park',
+    latitude: -37.7985,
+    longitude: 144.9438,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'lit', 'shade'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 26,
+    hoursLabel: '24h Open · Double-Gated Fence',
+    entryDetail:
+      'Macaulay Rd & Gracie St Airlock Gate · Street parking on Shiel St',
+    petPerks:
+      'Double-gated safety entry, dog drinking fountains, seating & synthetic/mulch high-wear zones.',
+    crowdAndSurfaceTip:
+      'Peak neighbourhood dog hour is 17:00–18:30; great secure spot for puppies learning recall.',
+  },
+  {
+    id: 'mel-royal-park',
+    name: 'Royal Park Native Grasslands',
+    subtitle: 'Parkville 3052 · Sweeping Native Bush & Off-Leash Meadows',
+    district: 'Inner',
+    category: 'park',
+    latitude: -37.7888,
+    longitude: 144.9515,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open',
+    entryDetail:
+      ' Poplar Rd / MacArthur Rd Car Park · Tram 58 Royal Park Stop',
+    petPerks:
+      ' Melbourne’s largest inner-city park with gumtree trails, off-leash meadows & wide gravel tracks.',
+    crowdAndSurfaceTip:
+      'Check foxtail grass seeds on fluffy paws in late spring/summer after dry spells.',
+  },
+  {
+    id: 'mel-yarra-bend',
+    name: 'Yarra Bend Park & Boathouse Loops',
+    subtitle: 'Fairfield / Kew 3078 · River Bushland & Off-Leash Zones',
+    district: 'Inner',
+    category: 'trail',
+    latitude: -37.7942,
+    longitude: 145.0156,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Yarra Bend Rd Car Park (Near Fairlea Ovals) or Fairfield Boathouse Dr',
+    petPerks:
+      'Shaded river red gums, designated off-leash bushland north of Eastern Fwy & dog-friendly Boathouse lawn.',
+    crowdAndSurfaceTip:
+      'Keep dogs leashed around the Grey-headed Flying-fox colony boardwalk and shared bike bridges.',
+  },
+  {
+    id: 'mel-fawkner-park',
+    name: 'Fawkner Park Elm Avenues',
+    subtitle: 'South Yarra 3141 · Deep Canopy Shade & Off-Leash Lawns',
+    district: 'Inner',
+    category: 'park',
+    latitude: -37.8414,
+    longitude: 144.9818,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Toorak Rd West Gate (Opposite Walsh St) · Metered bays on Toorak Rd & Commercial Rd',
+    petPerks:
+      'Dense heritage elm & Moreton Bay fig tunnels keep paths cool even on 30°C days.',
+    crowdAndSurfaceTip:
+      'Leash required on the central paved avenues and within 20m of active cricket/tennis matches.',
+  },
+  {
+    id: 'mel-albert-park',
+    name: 'Albert Park Lake & Off-Leash Ovals',
+    subtitle: 'Albert Park 3206 · Flat 5km Lake Loop & Dog Fields',
+    district: 'Inner',
+    category: 'park',
+    latitude: -37.8456,
+    longitude: 144.9688,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Aughtie Dr Car Park (Near Boatbuilder’s Yard Café, South Melbourne end)',
+    petPerks:
+      'Flat pram-friendly 5km lakeside path, dedicated off-leash sports ovals & waterfront café seating.',
+    crowdAndSurfaceTip:
+      'Keep on-leash right beside the swan nesting edges; Grand Prix bump-in restricts parts in Feb/Mar.',
+  },
+  {
+    id: 'mel-alma-park',
+    name: 'Alma Park Canopy Reserve',
+    subtitle: 'St Kilda East 3183 · Shaded Fig & Elm Off-Leash Park',
+    district: 'Inner South & Bayside',
+    category: 'park',
+    latitude: -37.8615,
+    longitude: 144.9978,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Alma Rd & Westbury St Gate · Free street parking along Westbury St',
+    petPerks:
+      'Towering fig canopy, off-leash expanses on both sides of the rail cutting & Hank Marvin market Sat.',
+    crowdAndSurfaceTip:
+      'Footbridge links East & West lawns; great cool-ground refuge on high-UV afternoons.',
+  },
+  {
+    id: 'mel-citizens-barkly',
+    name: 'Barkly Gardens Fenced Dog Park',
+    subtitle: 'Richmond 3121 · Enclosed River-End Agility Yard',
+    district: 'Inner',
+    category: 'dog_park',
+    latitude: -37.8288,
+    longitude: 145.0048,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 26,
+    hoursLabel: '24h Open · Fully Fenced',
+    entryDetail:
+      'Mary St & Coppin St Southern Gate · Free 2P street bays on Mary St',
+    petPerks:
+      'Secure fenced agility boulders, gravel/mulch drainage & water fountain beside Yarra trail link.',
+    crowdAndSurfaceTip:
+      'Fast-draining decomposed granite surface stays mud-free right after Melbourne rain showers.',
+  },
+  {
+    id: 'mel-caulfield-park',
+    name: 'Caulfield Park Off-Leash Ovals',
+    subtitle: 'Caulfield North 3161 · 26ha Parkland & Lake Walk',
+    district: 'Inner South & Bayside',
+    category: 'park',
+    latitude: -37.8768,
+    longitude: 145.0252,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Balaclava Rd & Hawthorn Rd Corner Car Park · Tram 3/16 Stop',
+    petPerks:
+      '2.2km flat perimeter gravel/paved track, generous off-leash sports ovals & duck conservatory lake.',
+    crowdAndSurfaceTip:
+      'Dogs must be leashed around the lake waterfowl zone and when organized weekend sport is underway.',
+  },
+  {
+    id: 'mel-central-hedgeley',
+    name: 'Central Park & Hedgeley Dene Gardens',
+    subtitle: 'Malvern East 3145 · Shaded Leafy Corridor & Oval',
+    district: 'Inner East',
+    category: 'park',
+    latitude: -37.8685,
+    longitude: 145.0488,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Burke Rd & Wattletree Rd Gate · Café strip right across Wattletree Rd',
+    petPerks:
+      'Lush oak canopy, dog-friendly patisseries opposite & peaceful linear garden stroll into Hedgeley Dene.',
+    crowdAndSurfaceTip:
+      'Central Park eastern lawn is off-leash; Hedgeley Dene ornamental pond path is calm on-leash.',
+  },
+  {
+    id: 'mel-darebin-parklands',
+    name: 'Darebin Parklands Bush Sanctuary',
+    subtitle: 'Alphington 3078 · Creek Valley Off-Leash Bushland',
+    district: 'North East',
+    category: 'trail',
+    latitude: -37.7726,
+    longitude: 145.0278,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Separation St Car Park (Alphington end, east of Yarana Rd)',
+    petPerks:
+      'Rare inner-city bushland gorge with large off-leash hill zone, creek bridges & birdlife.',
+    crowdAndSurfaceTip:
+      'Follow color-coded green posts for the off-leash zone; red posts around wetlands require a leash.',
+  },
+  {
+    id: 'mel-all-nations',
+    name: 'All Nations Park Hilltop Off-Leash',
+    subtitle: 'Northcote 3070 · Panoramic Lawn & Paved Loops',
+    district: 'Inner',
+    category: 'park',
+    latitude: -37.7688,
+    longitude: 145.0046,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Separation St Car Park (Behind Northcote Plaza) or Dennis St Entry',
+    petPerks:
+      'Dedicated off-leash hill lawn, smooth dry-weather concrete loops & High St dog cafés nearby.',
+    crowdAndSurfaceTip:
+      'Hilltop catches strong breeze on hot afternoons; minimal tree shade right on the summit.',
+  },
+  {
+    id: 'mel-gilpin-fenced',
+    name: 'Gilpin Park Fenced Dog Park',
+    subtitle: 'Brunswick 3056 · Dedicated Enclosed Dog Run & Reserve',
+    district: 'North West',
+    category: 'dog_park',
+    latitude: -37.7708,
+    longitude: 144.9542,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open · Fenced Yard + Open Park',
+    entryDetail:
+      'Albert St Entry (Opposite Pearson St, Brunswick) · Free street parking',
+    petPerks:
+      'Fenced agility/social enclosure plus wider unfenced reserve lawns & Sydney Rd cafés 600m east.',
+    crowdAndSurfaceTip:
+      'Friendly local Brunswick morning dog pack from 07:30–09:00.',
+  },
+  {
+    id: 'mel-footscray-park',
+    name: 'Footscray Park & Maribyrnong River',
+    subtitle: 'Footscray 3011 · Edwardian Canopy & Riverfront',
+    district: 'West',
+    category: 'park',
+    latitude: -37.7945,
+    longitude: 144.9082,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Maribyrnong Blvd River Car Park (Below Ballarat Rd terraced gardens)',
+    petPerks:
+      'Lower riverfront sports fields offer huge off-leash space; upper heritage palms & elms give deep shade.',
+    crowdAndSurfaceTip:
+      'Upper ornamental ponds are on-leash; head down to the flat riverside fields for off-leash zoomies.',
+  },
+  {
+    id: 'mel-cruickshank',
+    name: 'Cruickshank Park Creek Walk',
+    subtitle: 'Yarraville 3013 · Shaded Stony Creek Linear Park',
+    district: 'West',
+    category: 'trail',
+    latitude: -37.8148,
+    longitude: 144.8758,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Court St or Somerville Rd Entry (Near McNish Reserve dinosaur playground)',
+    petPerks:
+      'Winding gumtree creek corridor with designated off-leash lawns & local coffee cart on weekends.',
+    crowdAndSurfaceTip:
+      'Beloved Inner-West dog highway — watch for bikes along the shared central path.',
+  },
+  {
+    id: 'mel-cyril-curtain',
+    name: 'Cyril Curtain Fenced Dog Park',
+    subtitle: 'Williamstown 3016 · Bayside West Enclosed Dog Yard',
+    district: 'West',
+    category: 'dog_park',
+    latitude: -37.8655,
+    longitude: 144.8895,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'shade'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open · Fully Fenced',
+    entryDetail:
+      'Morris St Car Park (Next to Williamstown Botanic Gardens, Bayview St)',
+    petPerks:
+      'Secure fenced run catching cool Port Phillip Bay sea breezes, 300m from Williamstown Beach.',
+    crowdAndSurfaceTip:
+      'Adjacent Botanic Gardens are strictly no-dogs, so enter directly from Morris St.',
+  },
+  {
+    id: 'mel-surrey-boxhill',
+    name: 'Surrey Park & Box Hill Gardens',
+    subtitle: 'Box Hill 3128 · Off-Leash Oval & 1km cushioned Track',
+    district: 'Inner East',
+    category: 'park',
+    latitude: -37.8245,
+    longitude: 145.1185,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Canterbury Rd & Elgar Rd Car Park (Aqualink Box Hill precinct)',
+    petPerks:
+      'Generous off-leash sports oval at Surrey Park plus Box Hill Gardens’ shaded 1km perimeter track nearby.',
+    crowdAndSurfaceTip:
+      'Box Hill Gardens path is on-leash and well-lit at night; Surrey Park oval is off-leash outside match hours.',
+  },
+  {
+    id: 'mel-ruffey-lake',
+    name: 'Ruffey Lake Park Off-Leash Hills',
+    subtitle: 'Doncaster 3108 · 68ha Rolling Meadows & Disc Golf',
+    district: 'Inner East',
+    category: 'park',
+    latitude: -37.7775,
+    longitude: 145.1432,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'The Boulevarde Car Park (Northern off-leash zone) or Victoria St Gate',
+    petPerks:
+      'Huge undulating off-leash grasslands, creek bridges, paved lake circuit & shaded picnic pavilions.',
+    crowdAndSurfaceTip:
+      'Enter via The Boulevarde for immediate access to the massive northern off-leash hills.',
+  },
+  {
+    id: 'mel-westerfolds',
+    name: 'Westerfolds Park River Trails',
+    subtitle: 'Templestowe 3106 · 120ha Yarra Gumtree Loops',
+    district: 'North East',
+    category: 'trail',
+    latitude: -37.7438,
+    longitude: 145.1335,
+    distanceKm: 0,
+    amenities: ['shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'leashed_only',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · On-Leash Wildlife Park',
+    entryDetail:
+      'Fitzsimons Lane Main Entrance -> Ridge Car Park (Templestowe)',
+    petPerks:
+      '5km+ sealed asphalt trails winding under towering river red gums beside Yarra rapids.',
+    crowdAndSurfaceTip:
+      'Strictly on-leash to protect resident eastern grey kangaroos & wombats (especially at dusk).',
+  },
+  {
+    id: 'mel-jells-park',
+    name: 'Jells Park Lakeside Circuit',
+    subtitle: 'Wheelers Hill 3150 · South-East Flagship 127ha Park',
+    district: 'South East',
+    category: 'park',
+    latitude: -37.8965,
+    longitude: 145.1978,
+    distanceKm: 0,
+    amenities: ['shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'leashed_only',
+    spaceScore30: 28,
+    hoursLabel: 'Dawn to Dusk',
+    entryDetail:
+      'Waverley Rd Oaks Car Park (Closest to Madeline’s at Jells Café)',
+    petPerks:
+      'Wide sealed lakeside paths, dog-friendly outdoor deck at Madeline’s Café & shaded eucalypt lawns.',
+    crowdAndSurfaceTip:
+      'Jells Park itself is on-leash; for off-leash play right next door, cross into Nortons Park (1.2km north).',
+  },
+  {
+    id: 'mel-nortons-park',
+    name: 'Nortons Park Bushland Off-Leash',
+    subtitle: 'Wantirna South 3152 · Dandenong Creek Off-Leash Reserve',
+    district: 'Outer East',
+    category: 'dog_park',
+    latitude: -37.8785,
+    longitude: 145.2025,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'High St Rd Car Park (Wantirna South, west of Shepherd Rd)',
+    petPerks:
+      'Shaded eucalyptus bushland with generous council-designated off-leash meadows & creek trail access.',
+    crowdAndSurfaceTip:
+      'Stays noticeably cooler than open suburban ovals on 28°C+ afternoons.',
+  },
+  {
+    id: 'mel-lilydale-lake',
+    name: 'Lilydale Lake Fenced Dog Park',
+    subtitle: 'Lilydale 3140 · Outer East Fenced Run & 2.5km Lake Loop',
+    district: 'Outer East',
+    category: 'dog_park',
+    latitude: -37.7695,
+    longitude: 145.3492,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open · Fenced Agility + Unfenced Zone',
+    entryDetail:
+      'Swansea Rd Main Car Park · Follow path past dam wall to fenced dog park',
+    petPerks:
+      'Both a fully fenced sensory dog park AND a separate unfenced off-leash lawn, plus a flat 2.5km lake walk.',
+    crowdAndSurfaceTip:
+      'One of Outer East Melbourne’s best setups — flat compacted gravel stays clean after rain.',
+  },
+  {
+    id: 'mel-ballam-park',
+    name: 'Ballam Park Fenced Dog Run',
+    subtitle: 'Frankston 3199 · Quiet & Active Dual Fenced Yards',
+    district: 'Mornington Peninsula',
+    category: 'dog_park',
+    latitude: -38.1508,
+    longitude: 145.1585,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · Dual Fenced Zones',
+    entryDetail:
+      'Naranga Cres Car Park (Northern end of Ballam Park, Frankston)',
+    petPerks:
+      'Separate Active & Quiet fenced yards, agility tunnels, drinking stations & shaded seating.',
+    crowdAndSurfaceTip:
+      'Great Peninsula gateway stop with separate calm yard for shy, small, or senior dogs.',
+  },
+  {
+    id: 'mel-craigieburn-anzac',
+    name: 'ANZAC Park Fenced Dog Run',
+    subtitle: 'Craigieburn 3064 · Outer North Dual Fenced Dog Park',
+    district: 'North West',
+    category: 'dog_park',
+    latitude: -37.5968,
+    longitude: 144.9412,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open · Fully Fenced',
+    entryDetail:
+      'Central Park Ave Car Park (Next to Craigieburn Leisure Centre)',
+    petPerks:
+      'Double-gated entry, agility weave poles, concrete walking path & fresh water bowls.',
+    crowdAndSurfaceTip:
+      'Open sky exposure — best in morning or evening during summer UV peaks.',
+  },
+];
+
+/**
+ * 30 Verified Greater Sydney Harbour/Ocean Dog Beaches, Fenced Runs & Iconic Parks
+ * spanning City, Eastern Suburbs, Inner West, North Shore, Northern Beaches, Parramatta, Hills, Shire & West.
+ */
+export const SYDNEY_PILOT_SPOTS: WalkPlace[] = [
+  // === 6 Harbour & Ocean Off-Leash Dog Beaches ===
+  {
+    id: 'syd-rose-bay-beach',
+    name: 'Rose Bay Dog Beach (Dumaresq Reserve)',
+    subtitle: 'Rose Bay 2029 · 24h Harbour Sand & Shallow Wading',
+    district: 'Eastern Suburbs',
+    category: 'dog_beach',
+    latitude: -33.8698,
+    longitude: 151.2672,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'shade'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'Caledonian Rd & New South Head Rd Ramp (Dumaresq Reserve end)',
+    petPerks:
+      'Gentle wave-free Sydney Harbour water, Harbour Bridge views & SugarPlum / Rose Bay cafés across road.',
+    crowdAndSurfaceTip:
+      'Low to mid tide exposes the widest sandy beach; high tide narrows the sand strip near the seawall.',
+  },
+  {
+    id: 'syd-sirius-cove',
+    name: 'Sirius Cove Reserve & Dog Beach',
+    subtitle: 'Mosman 2088 · Sheltered Harbour Cove & Shaded Lawn',
+    district: 'North Shore',
+    category: 'dog_beach',
+    latitude: -33.8452,
+    longitude: 151.2398,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'shade'],
+    accessRule: 'timed_beach',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    weekendOpenWindows: [
+      [0, 9],
+      [16, 24],
+    ],
+    hoursLabel: '24h Mon–Fri · Wknds before 09:00 & after 16:00',
+    entryDetail:
+      'Sirius Cove Rd Metered Car Park (End of Sirius Cove Rd, Mosman)',
+    petPerks:
+      'Calm enclosed harbour cove, lush shaded grass reserve, dog rinse tap & Curraghbeena Point trail link.',
+    crowdAndSurfaceTip:
+      'Off-leash all day Mon–Fri; on Sat/Sun & public holidays off-leash is before 09:00 AM and after 04:00 PM.',
+  },
+  {
+    id: 'syd-rowland-reserve',
+    name: 'Rowland Reserve Dog Beach',
+    subtitle: 'Bayview 2104 · Premier Pittwater Grass-to-Sand Beach',
+    district: 'Northern Beaches',
+    category: 'dog_beach',
+    latitude: -33.6598,
+    longitude: 151.3005,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'shade', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 30,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'Pittwater Rd Pay-and-Display Car Park (Bayview, next to boat ramp)',
+    petPerks:
+      'Huge grassy reserve sloping straight into calm Pittwater shallows, mobile coffee van & dog wash bay.',
+    crowdAndSurfaceTip:
+      'Widely rated Sydney’s #1 dog beach; arrive before 09:30 on sunny Sundays for easy car park bays.',
+  },
+  {
+    id: 'syd-curl-curl-lagoon',
+    name: 'Flora & Ritchie Roberts Reserve (Curl Curl)',
+    subtitle: 'Curl Curl 2096 · Lagoon Wading & Coastal Off-Leash',
+    district: 'Northern Beaches',
+    category: 'dog_beach',
+    latitude: -33.7672,
+    longitude: 151.2928,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Off-Leash (Lagoon & Reserve)',
+    entryDetail:
+      'Carrington Pde & Griffin Rd Car Park (North Curl Curl Lagoon bridge)',
+    petPerks:
+      'Expansive coastal grass fields plus shallow Greendale Creek lagoon mouth for splashes.',
+    crowdAndSurfaceTip:
+      'Dogs are off-leash in the reserve & lagoon entrance, but strictly prohibited on main ocean surf sand.',
+  },
+  {
+    id: 'syd-greenhills-beach',
+    name: 'Greenhills Ocean Dog Beach',
+    subtitle: 'Cronulla 2230 · Sutherland Shire Ocean Off-Leash Strip',
+    district: 'Sutherland Shire',
+    category: 'dog_beach',
+    latitude: -34.0342,
+    longitude: 151.1735,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water'],
+    accessRule: 'timed_beach',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    openWindows: [
+      [0, 10],
+      [16, 24],
+    ],
+    hoursLabel: 'Timed Off-Leash: before 10:00 & after 16:00',
+    entryDetail:
+      'Greenhills Car Park · Mitchell Rd (North of Wanda Surf Club, Track 5–9)',
+    petPerks:
+      'Rare true ocean surf dog beach in Sydney with 1.5km of hard-packed wet sand for big runs.',
+    crowdAndSurfaceTip:
+      'Off-leash before 10:00 AM and after 4:00 PM daily (no dogs on beach between 10:00 and 16:00).',
+  },
+  {
+    id: 'syd-silver-beach-kurnell',
+    name: 'Silver Beach West Dog Area',
+    subtitle: 'Kurnell 2231 · Calm 24h Botany Bay Dog Beach',
+    district: 'Sutherland Shire',
+    category: 'dog_beach',
+    latitude: -34.0068,
+    longitude: 151.2045,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Off-Leash Year-Round',
+    entryDetail:
+      'Prince Charles Pde Western Jetty (Between 3rd & 4th rock groynes, Kurnell)',
+    petPerks:
+      'Flat calm Botany Bay water protected by rock groynes & Kurnell village cafés 400m east.',
+    crowdAndSurfaceTip:
+      'Keep outside the adjacent Kamay Botany Bay National Park boundary (NPWS zones prohibit dogs).',
+  },
+
+  // === 24 Iconic Parks, Fenced Dog Runs & Foreshore Reserves Across Greater Sydney ===
+  {
+    id: 'syd-centennial-park',
+    name: 'Centennial Park (Sandstone & Federation Valley)',
+    subtitle: 'Centennial Park 2021 · 154ha Off-Leash Paperbark & Hills',
+    district: 'Eastern Suburbs',
+    category: 'park',
+    latitude: -33.8968,
+    longitude: 151.2335,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 30,
+    hoursLabel: 'Dawn to Dusk (154ha Off-Leash)',
+    entryDetail:
+      'Woollahra Gates (Oxford St) or Randwick Gates -> Grand Dr Internal Parking',
+    petPerks:
+      'Massive off-leash outer meadows outside Grand Drive, paperbark shade & Spruce Goose / Greenhouse kiosks.',
+    crowdAndSurfaceTip:
+      'Inside the Grand Drive ring (duck ponds & gardens) is strictly on-leash; outside Grand Drive is off-leash.',
+  },
+  {
+    id: 'syd-sydney-park',
+    name: 'Sydney Park Hills & Wetlands',
+    subtitle: 'Alexandria 2015 · 40ha Rolling Lawns & Dog Paddling Ponds',
+    district: 'City & Inner South',
+    category: 'park',
+    latitude: -33.9105,
+    longitude: 151.1842,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 30,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Sydney Park Rd Car Park (Near Brick Kilns) or Barwon Park Rd Lot',
+    petPerks:
+      '85% of the park is off-leash with city-skyline hilltops, dog-friendly kiosk & paved all-weather paths.',
+    crowdAndSurfaceTip:
+      'Keep dogs out of the signed wildlife wetland boardwalks; hilltops catch cooling southerly busters.',
+  },
+  {
+    id: 'syd-cafe-bones',
+    name: 'Hawthorne Canal Reserve & Cafe Bones',
+    subtitle: 'Leichhardt 2040 · Famous Fenced Canal Run & Pupaccinos',
+    district: 'Inner West',
+    category: 'dog_park',
+    latitude: -33.8768,
+    longitude: 151.1512,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open (Cafe Bones 06:00–16:00)',
+    entryDetail:
+      'Hawthorne Pde Car Park (Under Marion St Light Rail Bridge, Leichhardt)',
+    petPerks:
+      'World-famous Cafe Bones serving dog-safe pupaccinos & biscuits inside a huge fenced canal-side run.',
+    crowdAndSurfaceTip:
+      'Adjacent shared bike path sits outside the fence so dogs can sprint worry-free.',
+  },
+  {
+    id: 'syd-glebe-foreshore',
+    name: 'Bicentennial Park & Glebe Foreshore',
+    subtitle: 'Glebe 2037 · Harbour Breeze Promenade & Off-Leash Lawns',
+    district: 'Inner West',
+    category: 'park',
+    latitude: -33.8732,
+    longitude: 151.1818,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Chapman Rd Car Park (Annandale/Glebe end near Jubilee Light Rail)',
+    petPerks:
+      '2.2km flat harbourfront concrete walk, ANZAC Bridge views, fig shade & Tramsheds dog dining nearby.',
+    crowdAndSurfaceTip:
+      'Federal Park & Jubilee oval lawns have generous off-leash areas; keep on-leash along the waterfront seawall.',
+  },
+  {
+    id: 'syd-rushcutters-bay',
+    name: 'Rushcutters Bay Park Harbour Lawn',
+    subtitle: 'Darling Point 2027 · Marina Breeze & Fig Canopy',
+    district: 'Eastern Suburbs',
+    category: 'park',
+    latitude: -33.8752,
+    longitude: 151.2286,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'timed_beach',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    openWindows: [
+      [0, 8.5],
+      [16.5, 24],
+    ],
+    hoursLabel: 'On-Leash 24h · Off-Leash 16:30–08:30',
+    entryDetail:
+      'New Beach Rd Kerbside Parking (Beside Cruising Yacht Club of Australia)',
+    petPerks:
+      'Giant Moreton Bay figs, paved seawall promenade, cafe kiosk & cool harbour breeze.',
+    crowdAndSurfaceTip:
+      'Timed off-leash applies 4:30 PM–8:30 AM daily; between 8:30 AM and 4:30 PM walk on-leash.',
+  },
+  {
+    id: 'syd-marks-park',
+    name: 'Marks Park Bondi–Tamarama Clifftop',
+    subtitle: 'Tamarama 2026 · Ocean Panorama Timed Off-Leash',
+    district: 'Eastern Suburbs',
+    category: 'park',
+    latitude: -33.8975,
+    longitude: 151.2738,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved'],
+    accessRule: 'timed_beach',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    openWindows: [
+      [0, 8.5],
+      [16.5, 24],
+    ],
+    hoursLabel: 'On-Leash 24h · Off-Leash 16:30–08:30',
+    entryDetail:
+      'Marks Lane & Fletcher St Loop (Headland between Bondi & Tamarama)',
+    petPerks:
+      'Unbeatable Pacific Ocean whale-watching headland lawn & coastal walk connection.',
+    crowdAndSurfaceTip:
+      'Closed to dogs for ~3 weeks in Oct/Nov during Sculpture by the Sea; minimal shade at midday.',
+  },
+  {
+    id: 'syd-camperdown-memorial',
+    name: 'Camperdown Memorial Rest Park',
+    subtitle: 'Newtown 2042 · Inner West Fig Shade & Social Lawn',
+    district: 'Inner West',
+    category: 'park',
+    latitude: -33.8948,
+    longitude: 151.1782,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open (Central Lawn Off-Leash)',
+    entryDetail:
+      'Australia St & Lennox St Entry (1 block off King St, Newtown)',
+    petPerks:
+      'Broad central off-leash grass, shady mature trees & dozens of dog-friendly Newtown cafés.',
+    crowdAndSurfaceTip:
+      'Smart calm alternative to narrow crowded King St footpaths on weekends.',
+  },
+  {
+    id: 'syd-callan-park',
+    name: 'Callan Park Iron Cove Grounds',
+    subtitle: 'Lilyfield 2040 · 60ha Heritage Harbour Parkland',
+    district: 'Inner West',
+    category: 'park',
+    latitude: -33.8645,
+    longitude: 151.1618,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Balmain Rd Main Gates or Waterfront Dr Car Park (On the Bay Run)',
+    petPerks:
+      'Sprawling sandstone heritage lawns, harbour breezes, shaded avenues & direct Bay Run access.',
+    crowdAndSurfaceTip:
+      'Waterfront Dr ovals & northern lawns allow off-leash play outside sporting bookings.',
+  },
+  {
+    id: 'syd-st-leonards-park',
+    name: 'St Leonards Park Fig Avenues',
+    subtitle: 'North Sydney 2060 · Lower North Shore Canopy & Oval',
+    district: 'North Shore',
+    category: 'park',
+    latitude: -33.8325,
+    longitude: 151.2098,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Miller St & Ridge St Avenue (Opposite North Sydney Oval)',
+    petPerks:
+      'Grand Victorian fig tree tunnels, water stations & northern lawn off-leash space.',
+    crowdAndSurfaceTip:
+      'Dense fig canopy keeps asphalt paths up to 12°C cooler than sunlit streets.',
+  },
+  {
+    id: 'syd-st-ives-dog-ring',
+    name: 'St Ives Showground Dog Rings',
+    subtitle: 'St Ives 2075 · Upper North Shore Bushland Dog Grounds',
+    district: 'North Shore',
+    category: 'dog_park',
+    latitude: -33.7058,
+    longitude: 151.1825,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open (Except Major Event Days)',
+    entryDetail:
+      '450 Mona Vale Rd Main Gate -> Dog Ring Car Park on left',
+    petPerks:
+      'Dedicated fenced & unfenced dog obedience rings surrounded by tall Ku-ring-gai eucalyptus forest.',
+    crowdAndSurfaceTip:
+      'Adjacent Ku-ring-gai Chase National Park prohibits dogs, making the Showground the best bushland hub.',
+  },
+  {
+    id: 'syd-manly-lagoon',
+    name: 'LM Graham Reserve (Manly Lagoon)',
+    subtitle: 'Manly / Queenscliff 2095 · Huge 24h Off-Leash Fields',
+    district: 'Northern Beaches',
+    category: 'park',
+    latitude: -33.7848,
+    longitude: 151.2775,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Kenneth Rd Car Park (Next to Manly Boy Charlton Aquatic Centre)',
+    petPerks:
+      'Massive flat off-leash fields, shaded lagoon path, dog water stations & Manly coffee spots.',
+    crowdAndSurfaceTip:
+      'Avoid letting dogs drink brackish lagoon water after heavy rain runoff; use the fresh council taps.',
+  },
+  {
+    id: 'syd-morrison-bay',
+    name: 'Morrison Bay & Bremner Park',
+    subtitle: 'Putney / Ryde 2112 · Parramatta River Off-Leash Lawns',
+    district: 'Ryde & Macquarie',
+    category: 'park',
+    latitude: -33.8285,
+    longitude: 151.1165,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Frances Rd Car Park (Putney) · Connects to Ryde River Walk',
+    petPerks:
+      'Breezy Parramatta River frontage, paved shared riverside trail & Putney village cafés.',
+    crowdAndSurfaceTip:
+      'Off-leash permitted on designated ovals when organized sports aren’t playing.',
+  },
+  {
+    id: 'syd-parramatta-park',
+    name: 'Parramatta Park River Loop',
+    subtitle: 'Parramatta 2150 · 85ha World-Heritage Fig & River Circuit',
+    district: 'Parramatta',
+    category: 'trail',
+    latitude: -33.8108,
+    longitude: 150.9955,
+    distanceKm: 0,
+    amenities: ['shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'leashed_only',
+    spaceScore30: 28,
+    hoursLabel: '06:00–20:00 (Summer) · 06:00–18:00 (Winter)',
+    entryDetail:
+      'Pitt St / Macquarie St Tudor Gatehouse -> Pavilion Flat Car Park',
+    petPerks:
+      '3.2km wide dedicated pedestrian lane, river breezes & Misc. / Gatehouse cafés with outdoor dog tables.',
+    crowdAndSurfaceTip:
+      'Parramatta Park is on-leash; for fenced off-leash 5 min away, head to Dan Mahoney Reserve.',
+  },
+  {
+    id: 'syd-dan-mahoney',
+    name: 'Dan Mahoney Fenced Dog Park',
+    subtitle: 'North Parramatta 2151 · Secure Enclosed Agility Run',
+    district: 'Parramatta',
+    category: 'dog_park',
+    latitude: -33.7965,
+    longitude: 151.0078,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open · Fully Fenced',
+    entryDetail:
+      ' Gladstone St & Boundary Rd Car Park (North Parramatta)',
+    petPerks:
+      'Double-gated fence, shade trees, seating & water fountain beside Hunts Creek bushwalk.',
+    crowdAndSurfaceTip:
+      'Popular local Parramatta after-work dog community from 17:00–19:00.',
+  },
+  {
+    id: 'syd-crestwood-hills',
+    name: 'Crestwood Reserve Fenced Dog Runs',
+    subtitle: 'Baulkham Hills 2153 · Hills District Small & Large Runs',
+    district: 'Hills & Hawkesbury',
+    category: 'dog_park',
+    latitude: -33.7495,
+    longitude: 150.9718,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · Separate Small/Large Yards',
+    entryDetail:
+      'Peel Rd Car Park (Near Chapel Ln, Baulkham Hills / Castle Hill)',
+    petPerks:
+      'Separate fenced enclosures for small & large dogs, shaded gumtree creek paths & water bubblers.',
+    crowdAndSurfaceTip:
+      'Paved creek loop around Crestwood Reserve is great for a warm-up walk before off-leash play.',
+  },
+  {
+    id: 'syd-bungarribee',
+    name: 'Bungarribee Park Super Dog Run',
+    subtitle: 'Bungarribee 2767 · Western Sydney’s Largest Fenced Park',
+    district: 'Blacktown',
+    category: 'dog_park',
+    latitude: -33.7842,
+    longitude: 150.8615,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'shade'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 30,
+    hoursLabel: '24h Open · Huge Fenced Park',
+    entryDetail:
+      'Doonside Rd & Holbeche Rd Car Park (Western Sydney Parklands)',
+    petPerks:
+      'Enormous fenced off-leash paddocks, water play fountains, shaded shelters & Harvey’s Bistro patio.',
+    crowdAndSurfaceTip:
+      'Western Sydney heats up 4–5°C warmer than the coast in summer — visit early morning on hot days.',
+  },
+  {
+    id: 'syd-bicentennial-olympic',
+    name: 'Bicentennial Park Mangrove & Lake Loops',
+    subtitle: 'Sydney Olympic Park 2127 · 40ha Shaded Paved Trails',
+    district: 'Parramatta',
+    category: 'trail',
+    latitude: -33.8458,
+    longitude: 151.0785,
+    distanceKm: 0,
+    amenities: ['shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'leashed_only',
+    spaceScore30: 28,
+    hoursLabel: '24h Open (Fenced Dog Run at P5 Lot)',
+    entryDetail:
+      'Australia Ave -> P10 Lake Belvedere Car Park (or P5 Hill Rd for Fenced Dog Park)',
+    petPerks:
+      'Kilometres of smooth shaded lakeside paths, Lilies on the Park café & nearby P5 fenced dog run.',
+    crowdAndSurfaceTip:
+      'Lake paths are on-leash; drive 2 min to P5 Blaxland Common if you want fenced off-leash zoomies.',
+  },
+  {
+    id: 'syd-steel-park-cooks',
+    name: 'Steel Park & Cooks River Greenway',
+    subtitle: 'Marrickville South 2204 · River Path & Off-Leash Lawns',
+    district: 'St George & Inner SW',
+    category: 'park',
+    latitude: -33.9218,
+    longitude: 151.1512,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_unfenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open',
+    entryDetail:
+      'Illawarra Rd River Car Park (Marrickville South)',
+    petPerks:
+      'Shaded casuarina river walk plus nearby Ewen Park & Warren Park off-leash riverfront lawns.',
+    crowdAndSurfaceTip:
+      'Stay alert for cyclists on the Cooks River shared path during weekday commuter hours.',
+  },
+  {
+    id: 'syd-carss-bush-park',
+    name: 'Carss Bush Park & Enclosed Dog Run',
+    subtitle: 'Carss Park 2221 · St George Bayfront Bush & Fenced Yard',
+    district: 'St George & Inner SW',
+    category: 'dog_park',
+    latitude: -33.9878,
+    longitude: 151.1165,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water', 'paved'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · Fenced Dog Park',
+    entryDetail:
+      'Carwar Ave Car Park (Near Carss Park Grille & Kogarah Bay foreshore)',
+    petPerks:
+      'Shaded bushland fenced dog run, calm Kogarah Bay promenade & dog-friendly Carss Park café.',
+    crowdAndSurfaceTip:
+      'Great St George all-rounder combining secure off-leash play with a breezy bay walk.',
+  },
+  {
+    id: 'syd-helena-st-kirrawee',
+    name: 'Helena Street Fenced Dog Park',
+    subtitle: 'Kirrawee 2232 · Shaded Shire Dual Fenced Agility Park',
+    district: 'Sutherland Shire',
+    category: 'dog_park',
+    latitude: -34.0315,
+    longitude: 151.0762,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · Small & All-Dogs Fenced Yards',
+    entryDetail:
+      'Helena St Cul-de-sac Parking (Kirrawee, bordering Royal National Park edge)',
+    petPerks:
+      'Tall eucalyptus shade canopy, separate small-dog yard, sandstone seating & agility logs.',
+    crowdAndSurfaceTip:
+      'Remember Royal National Park across the highway strictly bans dogs — Helena St is the safe Shire alternative.',
+  },
+  {
+    id: 'syd-shale-hills',
+    name: 'Shale Hills Fenced Dog Park',
+    subtitle: 'West Hoxton 2171 · South-West Flagship Agility Park',
+    district: 'South West',
+    category: 'dog_park',
+    latitude: -33.9185,
+    longitude: 150.8358,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'shade'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 29,
+    hoursLabel: '24h Open · Separate Small/Large Agility Runs',
+    entryDetail:
+      'Twenty Eighth Ave Car Park (Western Sydney Parklands, West Hoxton)',
+    petPerks:
+      'Purpose-built agility hurdles, tunnels, separate small/large fenced runs & wide parklands loops.',
+    crowdAndSurfaceTip:
+      'Early mornings and sunset hours beat Western Sydney summer heat.',
+  },
+  {
+    id: 'syd-jamison-penrith',
+    name: 'Jamison Park Fenced Dog Park',
+    subtitle: 'South Penrith 2750 · Nepean / Outer West Dual Dog Yards',
+    district: 'Outer West & Blue Mtns',
+    category: 'dog_park',
+    latitude: -33.7692,
+    longitude: 150.6928,
+    distanceKm: 0,
+    amenities: ['off_leash', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · Dual Fenced Enclosures',
+    entryDetail:
+      'York Rd & Batt St Car Park (South Penrith)',
+    petPerks:
+      'Separate small & large dog fenced yards, water stations, floodlit perimeter & nearby Nepean River walk.',
+    crowdAndSurfaceTip:
+      'Penrith basin can exceed 35°C in summer — stick to pre-08:30 AM or post-sunset sessions.',
+  },
+  {
+    id: 'syd-milton-macarthur',
+    name: 'Milton Park Fenced Dog Run',
+    subtitle: 'Ingleburn / Macquarie Fields 2564 · Macarthur Enclosed Run',
+    district: 'Macarthur & Outer SW',
+    category: 'dog_park',
+    latitude: -33.9885,
+    longitude: 150.8765,
+    distanceKm: 0,
+    amenities: ['off_leash', 'shade', 'water'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'off_leash_fenced',
+    spaceScore30: 27,
+    hoursLabel: '24h Open · Fully Fenced',
+    entryDetail:
+      'Macquarie Rd Car Park (Milton Park Sporting Complex, Ingleburn)',
+    petPerks:
+      'Mature gumtree shade, double-gated entry, drinking taps & spacious turf run.',
+    crowdAndSurfaceTip:
+      'Plenty of easy parking except on Saturday morning junior soccer match days.',
+  },
+  {
+    id: 'syd-barangaroo-headland',
+    name: 'Barangaroo Reserve Wulugul Walk',
+    subtitle: 'Barangaroo 2000 · Sandstone Harbour Headland Loop',
+    district: 'City & Inner South',
+    category: 'trail',
+    latitude: -33.8572,
+    longitude: 151.2012,
+    distanceKm: 0,
+    amenities: ['shade', 'water', 'paved', 'lit'],
+    accessRule: 'walk_in_free',
+    leashPolicy: 'leashed_only',
+    spaceScore30: 28,
+    hoursLabel: '24h Open · On-Leash Harbour Walk',
+    entryDetail:
+      'Towns Pl Entrance or Merriman St Lift · Wilson Underground Car Park',
+    petPerks:
+      'Car-free sandstone foreshore path, native harbour bushland & Walsh Bay waterfront cafés.',
+    crowdAndSurfaceTip:
+      'Smooth, fast-draining sandstone blocks stay mud-free right after Sydney downpours.',
+  },
+];
+
+/**
+ * 10 Iconic Melbourne Walking Corridors & Busy-Strip Smart Swaps
+ */
+export const MELBOURNE_STREET_CORRIDORS: StreetCorridor[] = [
+  {
+    id: 'mel-cor-merri-creek',
+    name: 'Merri Creek Trail (Clifton Hill – Brunswick)',
+    district: 'Inner North',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3m sealed creek trail + bush verges',
+    crowdSummary: 'Lush native gum canopy · Watch for commuter bikes 08:00–09:00',
+    lengthKm: 4.2,
+    coordinates: [
+      [-37.7858, 144.9965],
+      [-37.7755, 144.9882],
+      [-37.7662, 144.9835],
+    ],
+  },
+  {
+    id: 'mel-cor-yarra-trail',
+    name: 'Main Yarra Trail (Abbotsford Convent – Fairfield)',
+    district: 'Inner',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3.5m river bushland path',
+    crowdSummary: 'Peaceful river red gums · Farm Café dog courtyard stop',
+    lengthKm: 3.8,
+    coordinates: [
+      [-37.8025, 145.0062],
+      [-37.7955, 145.0128],
+      [-37.7885, 145.0175],
+    ],
+  },
+  {
+    id: 'mel-cor-tan-track',
+    name: 'The Tan Track (Domain & Botanic Perimeter)',
+    district: 'South Yarra',
+    baseConvenience: 'easy',
+    sidewalkWidth: '4m compacted gravel avenue',
+    crowdSummary: 'Deep elm/fig shade · Dogs welcome on Tan (not inside Botanic gates)',
+    lengthKm: 3.8,
+    coordinates: [
+      [-37.8258, 144.9742],
+      [-37.8318, 144.9845],
+      [-37.8342, 144.9765],
+      [-37.8285, 144.9718],
+    ],
+  },
+  {
+    id: 'mel-cor-bay-trail',
+    name: 'Bayside Coastal Walk (Elwood – Brighton Dog Beach)',
+    district: 'Bayside',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3.5m dedicated pedestrian foreshore path',
+    crowdSummary: 'Separated from bike lane · Cool sea breeze & bay views',
+    lengthKm: 4.5,
+    smartSwapFor: 'Smart swap for crowded Acland St café footpath',
+    coordinates: [
+      [-37.8842, 144.9818],
+      [-37.8965, 144.9845],
+      [-37.9082, 144.9862],
+    ],
+  },
+  {
+    id: 'mel-cor-acland-busy',
+    name: 'Acland St & Fitzroy St Dining Strip',
+    district: 'St Kilda',
+    baseConvenience: 'hard',
+    sidewalkWidth: '1.5m busy tram/dining kerb',
+    crowdSummary: 'Tram tracks, tight café tables & weekend tourist crowds',
+    lengthKm: 1.1,
+    betterAlternativeId: 'mel-cor-bay-trail',
+    coordinates: [
+      [-37.8622, 144.9742],
+      [-37.8678, 144.9788],
+    ],
+  },
+  {
+    id: 'mel-cor-princes-park',
+    name: 'Princes Park Elm Perimeter Loop',
+    district: 'Carlton North',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3.8m flat gravel running & dog track',
+    crowdSummary: 'Shaded heritage avenues + southern off-leash dog lawn',
+    lengthKm: 3.2,
+    coordinates: [
+      [-37.7785, 144.9605],
+      [-37.7865, 144.9622],
+      [-37.7905, 144.9612],
+    ],
+  },
+  {
+    id: 'mel-cor-chapel-busy',
+    name: 'Chapel St Retail Strip (South Yarra – Prahran)',
+    district: 'Prahran',
+    baseConvenience: 'hard',
+    sidewalkWidth: '1.4m narrow retail footpath',
+    crowdSummary: 'Heavy traffic, delivery bikes & narrow shopfront kerbs',
+    lengthKm: 1.6,
+    betterAlternativeId: 'mel-cor-tan-track',
+    coordinates: [
+      [-37.8405, 144.9952],
+      [-37.8518, 144.9935],
+    ],
+  },
+  {
+    id: 'mel-cor-maribyrnong',
+    name: 'Maribyrnong River Promenade (Footscray – Ascot Vale)',
+    district: 'West',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3.5m flat riverside path',
+    crowdSummary: 'Wide grassy verges, boathouse stop & gentle river breeze',
+    lengthKm: 4.0,
+    coordinates: [
+      [-37.7945, 144.9082],
+      [-37.7835, 144.9015],
+      [-37.7752, 144.8925],
+    ],
+  },
+  {
+    id: 'mel-cor-gardiners-creek',
+    name: 'Gardiners Creek Trail (Glen Iris – Ashburton)',
+    district: 'Inner East',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3m leafy creek greenway',
+    crowdSummary: 'Links multiple off-leash ovals along shaded creek flats',
+    lengthKm: 3.6,
+    coordinates: [
+      [-37.8545, 145.0525],
+      [-37.8618, 145.0685],
+      [-37.8692, 145.0815],
+    ],
+  },
+  {
+    id: 'mel-cor-sydney-rd-busy',
+    name: 'Sydney Rd Tram Strip (Brunswick)',
+    district: 'North West',
+    baseConvenience: 'moderate',
+    sidewalkWidth: '1.8m shopfront kerb',
+    crowdSummary: 'Busy tram doors & narrow bike lane — Upfield/Gilpin Park calmer',
+    lengthKm: 1.8,
+    betterAlternativeId: 'mel-cor-princes-park',
+    coordinates: [
+      [-37.7755, 144.9612],
+      [-37.7625, 144.9628],
+    ],
+  },
+];
+
+/**
+ * 10 Iconic Sydney Walking Corridors & Busy-Strip Smart Swaps
+ */
+export const SYDNEY_STREET_CORRIDORS: StreetCorridor[] = [
+  {
+    id: 'syd-cor-glebe-walk',
+    name: 'Glebe Foreshore Promenade (Blackwattle – Rozelle Bay)',
+    district: 'Inner West',
+    baseConvenience: 'easy',
+    sidewalkWidth: '4m car-free harbour promenade',
+    crowdSummary: 'Flat waterfront breeze, fig trees & adjacent off-leash lawns',
+    lengthKm: 2.4,
+    smartSwapFor: 'Smart swap for narrow Glebe Pt Rd & King St kerbs',
+    coordinates: [
+      [-33.8758, 151.1892],
+      [-33.8732, 151.1818],
+      [-33.8718, 151.1745],
+    ],
+  },
+  {
+    id: 'syd-cor-bay-run',
+    name: 'The Bay Run (Iron Cove 7km Foreshore)',
+    district: 'Inner West',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3.5m separated pedestrian & cycle lanes',
+    crowdSummary: 'Harbour views, Callan Park & Cafe Bones detours right alongside',
+    lengthKm: 7.0,
+    coordinates: [
+      [-33.8645, 151.1618],
+      [-33.8565, 151.1525],
+      [-33.8662, 151.1458],
+      [-33.8742, 151.1508],
+    ],
+  },
+  {
+    id: 'syd-cor-bondi-bronte',
+    name: 'Bondi to Bronte Clifftop Walk',
+    district: 'Eastern Suburbs',
+    baseConvenience: 'moderate',
+    sidewalkWidth: '1.8–2.5m sandstone cliff path + stairs',
+    crowdSummary: 'Stunning pre-08:00 AM on-leash · Crowded & sun-exposed midday',
+    lengthKm: 2.5,
+    coordinates: [
+      [-33.8952, 151.2745],
+      [-33.8995, 151.2718],
+      [-33.9038, 151.2685],
+    ],
+  },
+  {
+    id: 'syd-cor-centennial-shade',
+    name: 'Centennial Park Outer Paperbark Trail',
+    district: 'Eastern Suburbs',
+    baseConvenience: 'easy',
+    sidewalkWidth: 'Wide soft-grass & shaded equestrian/walker verge',
+    crowdSummary: 'Huge off-leash space · Cool tree canopy all day',
+    lengthKm: 3.8,
+    smartSwapFor: 'Smart swap for crowded Oxford St & Bondi midday heat',
+    coordinates: [
+      [-33.8915, 151.2295],
+      [-33.8968, 151.2385],
+      [-33.9035, 151.2345],
+    ],
+  },
+  {
+    id: 'syd-cor-king-st-busy',
+    name: 'King St Newtown Dining Strip',
+    district: 'Inner West',
+    baseConvenience: 'hard',
+    sidewalkWidth: '1.3m narrow Victorian footpath',
+    crowdSummary: 'Heavy foot traffic, café queues & bus kerb noise',
+    lengthKm: 1.5,
+    betterAlternativeId: 'syd-cor-glebe-walk',
+    coordinates: [
+      [-33.8935, 151.1825],
+      [-33.9025, 151.1788],
+    ],
+  },
+  {
+    id: 'syd-cor-cremorne-point',
+    name: 'Cremorne Point Harbour Reserve Circuit',
+    district: 'North Shore',
+    baseConvenience: 'easy',
+    sidewalkWidth: '2.8m shaded harbour garden path',
+    crowdSummary: 'Opera House views, Lex & Ruby’s lawn & cool sea breeze',
+    lengthKm: 2.2,
+    coordinates: [
+      [-33.8415, 151.2265],
+      [-33.8478, 151.2298],
+      [-33.8435, 151.2318],
+    ],
+  },
+  {
+    id: 'syd-cor-narrabeen-lagoon',
+    name: 'Narrabeen Lagoon Bush & Boardwalk Trail',
+    district: 'Northern Beaches',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3m flat boardwalk & shaded casuarina track',
+    crowdSummary: 'Flat 8.4km loop · Shaded water views & dog-friendly cafés',
+    lengthKm: 8.4,
+    coordinates: [
+      [-33.7135, 151.2945],
+      [-33.7195, 151.2815],
+      [-33.7112, 151.2755],
+    ],
+  },
+  {
+    id: 'syd-cor-cooks-river',
+    name: 'Cooks River Foreshore Walk (Marrickville – Earlwood)',
+    district: 'St George & Inner SW',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3m river path + wide grass banks',
+    crowdSummary: 'Links Steel Park, Ewen Park & Cup and Cook dog café',
+    lengthKm: 3.5,
+    coordinates: [
+      [-33.9218, 151.1512],
+      [-33.9205, 151.1395],
+      [-33.9235, 151.1285],
+    ],
+  },
+  {
+    id: 'syd-cor-parramatta-river',
+    name: 'Parramatta Escarpment & River Boardwalk',
+    district: 'Parramatta',
+    baseConvenience: 'easy',
+    sidewalkWidth: '3.5m modern riverfront boardwalk',
+    crowdSummary: 'Smooth dry footing · Connects Ferry Wharf to Parramatta Park',
+    lengthKm: 2.6,
+    coordinates: [
+      [-33.8132, 151.0115],
+      [-33.8118, 151.0035],
+      [-33.8108, 150.9955],
+    ],
+  },
+  {
+    id: 'syd-cor-oxford-st-busy',
+    name: 'Oxford St Paddington Retail Strip',
+    district: 'Eastern Suburbs',
+    baseConvenience: 'hard',
+    sidewalkWidth: '1.5m busy bus-corridor kerb',
+    crowdSummary: 'Heavy traffic noise & weekend market crowds — duck into Centennial',
+    lengthKm: 1.4,
+    betterAlternativeId: 'syd-cor-centennial-shade',
+    coordinates: [
+      [-33.8848, 151.2255],
+      [-33.8895, 151.2342],
+    ],
+  },
+];

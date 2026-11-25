@@ -1,0 +1,23 @@
+{
+  "name": "PawCast — Smart Dog Walk Planner",
+  "short_name": "PawCast",
+  "description": "Live pavement heat, Extreme UV (11+), rain, and off-leash dog beach & park planner across 2,183 Melbourne, Sydney, and Shanghai suburbs.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF5F0",
+  "theme_color": "#166345",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
