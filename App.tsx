@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -12,13 +13,14 @@ import {
   SafeAreaProvider,
   SafeAreaView,
 } from 'react-native-safe-area-context';
+import { AuthModal } from './src/components/AuthModal';
 import { DogAvatar } from './src/components/DogAvatar';
 import { DogProfileScreen } from './src/components/DogProfileScreen';
 import { ExploreMapScreen } from './src/components/ExploreMapScreen';
 import { LocationModal } from './src/components/LocationModal';
 import { UiIcon } from './src/components/UiIcons';
 import { WalkNowScreen } from './src/components/WalkNowScreen';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import {
   useWalkPlanner,
   WalkPlannerProvider,
@@ -34,6 +36,7 @@ const MainShell: React.FC = () => {
   const {
     location,
     dog,
+    memberProfile,
     units,
     toggleUnits,
     language,
@@ -41,10 +44,12 @@ const MainShell: React.FC = () => {
     pendingDeepLinkSpotId,
     clearPendingDeepLinkSpot,
   } = useWalkPlanner();
+  const { user, syncStatus } = useAuth();
   const t = getStrings(language);
   const { width, height } = useWindowDimensions();
 
   const [activeTab, setActiveTab] = useState<TabKey>('walk');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [focusedMapPlaceId, setFocusedMapPlaceId] = useState<string | null>(
     null
   );
@@ -149,25 +154,61 @@ const MainShell: React.FC = () => {
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={() => setActiveTab('dog')}
-            accessibilityRole="button"
-            accessibilityLabel={`Open ${dog.name} profile`}
-            style={({ pressed }) => [
-              styles.dogHeaderChip,
-              activeTab === 'dog' && styles.dogHeaderChipActive,
-              pressed && styles.pressed,
-            ]}
-          >
-            <DogAvatar
-              breedId={dog.breedId}
-              customUri={dog.customPhotoUri}
-              size={24}
-            />
-            <Text style={styles.dogHeaderName} numberOfLines={1}>
-              {dog.name}
-            </Text>
-          </Pressable>
+          {user ? (
+            <Pressable
+              onPress={() => setActiveTab('dog')}
+              accessibilityRole="button"
+              accessibilityLabel={`Open member account`}
+              style={({ pressed }) => [
+                styles.dogHeaderChip,
+                activeTab === 'dog' && styles.dogHeaderChipActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View style={styles.headerUserAvatarWrap}>
+                {memberProfile.avatarUri ? (
+                  <Image
+                    source={{ uri: memberProfile.avatarUri }}
+                    style={styles.headerUserAvatarImg}
+                  />
+                ) : (
+                  <Text style={styles.headerUserAvatarInitial}>
+                    {(
+                      memberProfile.displayName.trim() ||
+                      user.displayName ||
+                      'M'
+                    )
+                      .slice(0, 1)
+                      .toUpperCase()}
+                  </Text>
+                )}
+                <View
+                  style={[
+                    styles.headerSyncDot,
+                    syncStatus === 'error' && styles.headerSyncDotWarn,
+                  ]}
+                />
+              </View>
+              <Text style={styles.dogHeaderName} numberOfLines={1}>
+                {memberProfile.displayName.trim() ||
+                  user.displayName ||
+                  t.accountSyncSynced}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => setAuthModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t.accountSignInCta}
+              style={({ pressed }) => [
+                styles.headerSignInBtn,
+                pressed && styles.pressed,
+              ]}
+            >
+              <UiIcon name="mail" size={13} color="#FFFFFF" />
+              <Text style={styles.headerSignInText}>{t.headerSignInShort}</Text>
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -192,6 +233,7 @@ const MainShell: React.FC = () => {
               setAutoLocateOnModalOpen(true);
               setLocationModalOpen(true);
             }}
+            onOpenSignIn={() => setAuthModalOpen(true)}
           />
         ) : null}
 
@@ -333,6 +375,12 @@ const MainShell: React.FC = () => {
         autoTriggerGps={autoLocateOnModalOpen}
         onAutoTriggerConsumed={() => setAutoLocateOnModalOpen(false)}
       />
+
+      <AuthModal
+        visible={authModalOpen}
+        initialMode="signin"
+        onClose={() => setAuthModalOpen(false)}
+      />
     </SafeAreaView>
   );
 
@@ -360,6 +408,39 @@ const MainShell: React.FC = () => {
           </Text>
         </View>
         <View style={styles.desktopToolbarActions}>
+          <Pressable
+            onPress={() => {
+              if (user) {
+                setActiveTab('dog');
+              } else {
+                setAuthModalOpen(true);
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={
+              user ? t.accountCardTitle : t.accountSignInCta
+            }
+            style={({ pressed }) => [
+              styles.frameToggleBtn,
+              !user && styles.desktopSignInBtn,
+              user && styles.frameToggleBtnActive,
+              ELEVATION.card,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.frameToggleText,
+                !user && styles.desktopSignInText,
+                user && styles.frameToggleTextActive,
+              ]}
+            >
+              {user
+                ? `${memberProfile.displayName.trim() || user.displayName || user.maskedEmail} · ${t.accountSyncSynced}`
+                : t.accountSignInCta}
+            </Text>
+          </Pressable>
+
           <Pressable
             onPress={toggleLanguage}
             accessibilityRole="button"
@@ -727,6 +808,63 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textPrimary,
     flexShrink: 1,
+  },
+  headerSignInBtn: {
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.brand,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+  },
+  headerSignInText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  headerUserAvatarWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.brandLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  headerUserAvatarImg: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  headerUserAvatarInitial: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  headerSyncDot: {
+    position: 'absolute',
+    right: -1,
+    bottom: -1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.brand,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  headerSyncDotWarn: {
+    backgroundColor: '#D97706',
+  },
+  desktopSignInBtn: {
+    backgroundColor: COLORS.brand,
+    borderColor: COLORS.brand,
+  },
+  desktopSignInText: {
+    color: '#FFFFFF',
   },
   screenBody: {
     flex: 1,

@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { detectActiveRegion } from '../constants/auSuburbs';
+import { useAuth } from '../context/AuthContext';
 import { useWalkPlanner } from '../context/WalkPlannerContext';
 import { buildDoorstepLoop } from '../engine/walkScoring';
 import {
@@ -58,6 +59,7 @@ interface WalkNowScreenProps {
   onOpenFullMap: () => void;
   onPreviewLoopOnMap: (duration: LoopDurationMinutes) => void;
   onOpenGpsSuburbLocator?: () => void;
+  onOpenSignIn?: () => void;
 }
 
 function buildVerdictCopy(
@@ -424,7 +426,10 @@ export const WalkNowScreen: React.FC<WalkNowScreenProps> = ({
   onOpenFullMap,
   onPreviewLoopOnMap,
   onOpenGpsSuburbLocator,
+  onOpenSignIn,
 }) => {
+  const { user } = useAuth();
+  const [dismissedSignInBanner, setDismissedSignInBanner] = useState(false);
   const {
     location,
     requestGpsLocation,
@@ -1001,6 +1006,38 @@ export const WalkNowScreen: React.FC<WalkNowScreenProps> = ({
             </View>
           ) : null}
         </View>
+
+        {/* Prominent Dismissible Sign-In Callout Banner (Signed-Out Visitors Only) */}
+        {!user && !dismissedSignInBanner && onOpenSignIn ? (
+          <View style={[styles.signInBanner, ELEVATION.card]}>
+            <View style={styles.signInBannerIcon}>
+              <UiIcon name="cloud" size={16} color={COLORS.brand} />
+            </View>
+            <Text style={styles.signInBannerText} numberOfLines={2}>
+              {t.homeSignInBannerTitle}
+            </Text>
+            <Pressable
+              onPress={onOpenSignIn}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.signInBannerCta,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.signInBannerCtaText}>
+                {t.homeSignInBannerCta}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDismissedSignInBanner(true)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t.closeBtn}
+            >
+              <UiIcon name="close" size={14} color={COLORS.textMuted} />
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Weather-Triggered Gear Strip */}
         {activeGearItems.length > 0 ? (
@@ -2137,5 +2174,44 @@ const styles = StyleSheet.create({
   },
   gearStripPillTextChecked: {
     color: COLORS.brandDark,
+  },
+  signInBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  signInBannerIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: COLORS.brandLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signInBannerText: {
+    fontFamily: UI_FONT_FAMILY,
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16.5,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  signInBannerCta: {
+    backgroundColor: COLORS.brand,
+    borderRadius: 999,
+    paddingVertical: 6.5,
+    paddingHorizontal: 12,
+  },
+  signInBannerCtaText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });
