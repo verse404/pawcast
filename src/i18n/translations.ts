@@ -446,6 +446,16 @@ export interface AppStrings {
   photosSaveToMapBtn: string;
   photosDeleteBtn: string;
   photosConfirmDeleteBtn: string;
+  photosWallBtn: string;
+  photosBackToMapBtn: string;
+  photosWallModeAll: string;
+  photosWallModeFolders: string;
+  photosWallModeMonths: string;
+  photosFolderCount: (count: string) => string;
+  photosAllFoldersBack: string;
+  photosAddCardLabel: string;
+  photosPrevBtn: string;
+  photosNextBtn: string;
 }
 
 const EN_STRINGS: AppStrings = {
@@ -881,7 +891,7 @@ const EN_STRINGS: AppStrings = {
   photosCountSummary: (photos, places) =>
     `${photos} Photos · ${places} Spots`,
   photosViewMap: 'Map',
-  photosViewGrid: 'Grid',
+  photosViewGrid: 'Photo Wall',
   photosAddBtn: '+ Photo',
   photosAddFirstBtn: '+ Add Walk Photo',
   photosFitAllBtn: 'Fit All',
@@ -906,6 +916,16 @@ const EN_STRINGS: AppStrings = {
   photosSaveToMapBtn: 'Pin to Photo Map',
   photosDeleteBtn: 'Delete Photo',
   photosConfirmDeleteBtn: 'Tap Again to Delete',
+  photosWallBtn: 'Photo Wall',
+  photosBackToMapBtn: 'Photo Map',
+  photosWallModeAll: 'All Photos',
+  photosWallModeFolders: 'Place Folders',
+  photosWallModeMonths: 'By Month',
+  photosFolderCount: (count) => `${count} photos`,
+  photosAllFoldersBack: '← All Folders',
+  photosAddCardLabel: 'Add Photo',
+  photosPrevBtn: '‹ Prev',
+  photosNextBtn: 'Next ›',
 };
 
 const ZH_STRINGS: AppStrings = {
@@ -1321,7 +1341,7 @@ const ZH_STRINGS: AppStrings = {
 
   photosCountSummary: (photos, places) => `${photos} 张 · ${places} 处`,
   photosViewMap: '地图',
-  photosViewGrid: '相册',
+  photosViewGrid: '照片墙',
   photosAddBtn: '+ 传照片',
   photosAddFirstBtn: '+ 上传第一张遛狗照',
   photosFitAllBtn: '全部',
@@ -1346,6 +1366,16 @@ const ZH_STRINGS: AppStrings = {
   photosSaveToMapBtn: '钉在足迹地图上',
   photosDeleteBtn: '删除照片',
   photosConfirmDeleteBtn: '再次点击确认删除',
+  photosWallBtn: '照片墙',
+  photosBackToMapBtn: '足迹地图',
+  photosWallModeAll: '全部照片',
+  photosWallModeFolders: '地点文件夹',
+  photosWallModeMonths: '按月份',
+  photosFolderCount: (count) => `${count} 张照片`,
+  photosAllFoldersBack: '← 返回全部文件夹',
+  photosAddCardLabel: '添加照片',
+  photosPrevBtn: '‹ 上一张',
+  photosNextBtn: '下一张 ›',
 };
 
 const ZH_BREED_LABELS: Record<string, string> = {

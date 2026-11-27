@@ -27,7 +27,8 @@ import { buildSafeDirectionsUrl } from '../utils/validation';
 import { PhotoMemoryMap } from './PhotoMemoryMap';
 import { UiIcon } from './UiIcons';
 
-type PhotoViewMode = 'map' | 'grid';
+type PhotoViewMode = 'map' | 'wall';
+type WallGroupMode = 'all' | 'folders' | 'months';
 
 interface PendingPhotoDraft {
   thumbnailUri: string;
@@ -58,6 +59,8 @@ export const PhotoMapScreen: React.FC = () => {
   const loc = getLocaleTag(language);
 
   const [viewMode, setViewMode] = useState<PhotoViewMode>('map');
+  const [wallGroupMode, setWallGroupMode] = useState<WallGroupMode>('all');
+  const [openedFolderKey, setOpenedFolderKey] = useState<string | null>(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(
     photoMemories[0]?.id ?? null
   );
@@ -105,6 +108,65 @@ export const PhotoMapScreen: React.FC = () => {
         : null,
     [lightboxPhotoId, photoMemories]
   );
+
+  const placeFolders = useMemo(() => {
+    const map = new Map<
+      string,
+      { key: string; title: string; subtitle: string; items: PhotoMemory[] }
+    >();
+    for (const p of photoMemories) {
+      const key = p.placeName.trim().toLowerCase() || 'walk-spot';
+      const existing = map.get(key);
+      if (existing) {
+        existing.items.push(p);
+      } else {
+        map.set(key, {
+          key,
+          title: p.placeName,
+          subtitle: p.suburbLabel || p.takenDateIso,
+          items: [p],
+        });
+      }
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.items[0].createdAtMs - a.items[0].createdAtMs
+    );
+  }, [photoMemories]);
+
+  const monthGroups = useMemo(() => {
+    const map = new Map<string, PhotoMemory[]>();
+    for (const p of photoMemories) {
+      const monthKey = p.takenDateIso.slice(0, 7) || 'Unknown';
+      const list = map.get(monthKey) || [];
+      list.push(p);
+      map.set(monthKey, list);
+    }
+    return Array.from(map.entries())
+      .map(([month, items]) => ({ month, items }))
+      .sort((a, b) => b.month.localeCompare(a.month));
+  }, [photoMemories]);
+
+  const activeFolder = useMemo(
+    () =>
+      openedFolderKey
+        ? placeFolders.find((f) => f.key === openedFolderKey) ?? null
+        : null,
+    [openedFolderKey, placeFolders]
+  );
+
+  const activeLightboxIndex = useMemo(() => {
+    if (!lightboxPhoto) return -1;
+    return photoMemories.findIndex((p) => p.id === lightboxPhoto.id);
+  }, [lightboxPhoto, photoMemories]);
+
+  const stepLightboxPhoto = (delta: -1 | 1) => {
+    if (photoMemories.length <= 1 || activeLightboxIndex < 0) return;
+    const nextIdx =
+      (activeLightboxIndex + delta + photoMemories.length) %
+      photoMemories.length;
+    setConfirmDeleteId(null);
+    setLightboxPhotoId(photoMemories[nextIdx].id);
+  };
 
   const resolveSuggestedPlace = (lat: number, lon: number): {
     placeName: string;
@@ -263,12 +325,24 @@ export const PhotoMapScreen: React.FC = () => {
 
           <View style={[styles.modeSwitch, ELEVATION.card]}>
             <Pressable
-              onPress={() => setViewMode('map')}
+              onPress={() => {
+                setViewMode('map');
+                setOpenedFolderKey(null);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: viewMode === 'map' }}
               style={[
                 styles.modeBtn,
                 viewMode === 'map' && styles.modeBtnActive,
               ]}
             >
+              <UiIcon
+                name="map"
+                size={12}
+                color={
+                  viewMode === 'map' ? COLORS.brandDark : COLORS.textSecondary
+                }
+              />
               <Text
                 style={[
                   styles.modeBtnText,
@@ -279,19 +353,28 @@ export const PhotoMapScreen: React.FC = () => {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setViewMode('grid')}
+              onPress={() => setViewMode('wall')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: viewMode === 'wall' }}
               style={[
                 styles.modeBtn,
-                viewMode === 'grid' && styles.modeBtnActive,
+                viewMode === 'wall' && styles.modeBtnActive,
               ]}
             >
+              <UiIcon
+                name="layers"
+                size={12}
+                color={
+                  viewMode === 'wall' ? COLORS.brandDark : COLORS.textSecondary
+                }
+              />
               <Text
                 style={[
                   styles.modeBtnText,
-                  viewMode === 'grid' && styles.modeBtnTextActive,
+                  viewMode === 'wall' && styles.modeBtnTextActive,
                 ]}
               >
-                {t.photosViewGrid}
+                {t.photosWallBtn}
               </Text>
             </Pressable>
           </View>
@@ -487,6 +570,18 @@ export const PhotoMapScreen: React.FC = () => {
                       </Text>
                     </Pressable>
                     <Pressable
+                      onPress={() => setViewMode('wall')}
+                      style={({ pressed }) => [
+                        styles.secondaryActionBtn,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <UiIcon name="layers" size={13} color={COLORS.brandDark} />
+                      <Text style={styles.secondaryActionText}>
+                        {t.photosWallBtn}
+                      </Text>
+                    </Pressable>
+                    <Pressable
                       onPress={() => handleOpenPhotoMaps(activePhoto)}
                       style={({ pressed }) => [
                         styles.primaryActionBtn,
@@ -540,14 +635,51 @@ export const PhotoMapScreen: React.FC = () => {
           ) : null}
         </View>
       ) : (
-        /* Grid Gallery View */
+        /* Photo Wall & Place Folder Gallery View */
         <ScrollView
           style={styles.gridScroll}
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Wall Grouping Sub-Bar (All Photos · Place Folders · By Month) */}
+          {photoMemories.length > 0 ? (
+            <View style={styles.wallSubBar}>
+              {(
+                [
+                  { key: 'all', label: t.photosWallModeAll },
+                  { key: 'folders', label: t.photosWallModeFolders },
+                  { key: 'months', label: t.photosWallModeMonths },
+                ] as Array<{ key: WallGroupMode; label: string }>
+              ).map((m) => {
+                const active = wallGroupMode === m.key;
+                return (
+                  <Pressable
+                    key={m.key}
+                    onPress={() => {
+                      setWallGroupMode(m.key);
+                      setOpenedFolderKey(null);
+                    }}
+                    style={[
+                      styles.wallFilterChip,
+                      active && styles.wallFilterChipActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.wallFilterChipText,
+                        active && styles.wallFilterChipTextActive,
+                      ]}
+                    >
+                      {m.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
           {photoMemories.length === 0 ? (
-            <View style={[styles.emptyCard, ELEVATION.card, { marginTop: 48 }]}>
+            <View style={[styles.emptyCard, ELEVATION.card, { marginTop: 24 }]}>
               <View style={styles.emptyIconCircle}>
                 <UiIcon name="camera" size={22} color={COLORS.brand} />
               </View>
@@ -562,8 +694,149 @@ export const PhotoMapScreen: React.FC = () => {
                 </Text>
               </Pressable>
             </View>
+          ) : wallGroupMode === 'folders' && !activeFolder ? (
+            /* Folder Cards Grouped by Place */
+            <View style={styles.folderGridWrap}>
+              {placeFolders.map((folder) => {
+                const cover = folder.items[0];
+                const second = folder.items[1];
+                return (
+                  <Pressable
+                    key={folder.key}
+                    onPress={() => setOpenedFolderKey(folder.key)}
+                    style={({ pressed }) => [
+                      styles.folderCard,
+                      ELEVATION.card,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.folderCoverWrap}>
+                      {second ? (
+                        <Image
+                          source={{ uri: second.thumbnailUri }}
+                          style={styles.folderBackPreview}
+                        />
+                      ) : null}
+                      <Image
+                        source={{ uri: cover.thumbnailUri }}
+                        style={styles.folderCoverImg}
+                      />
+                      <View style={styles.folderCountPill}>
+                        <Text style={styles.folderCountPillText}>
+                          {formatInteger(folder.items.length, loc)}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.folderMetaBox}>
+                      <Text style={styles.folderTitle} numberOfLines={1}>
+                        {folder.title}
+                      </Text>
+                      <Text style={styles.folderSub} numberOfLines={1}>
+                        {t.photosFolderCount(
+                          formatInteger(folder.items.length, loc)
+                        )}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : wallGroupMode === 'folders' && activeFolder ? (
+            /* Opened Single Place Folder */
+            <View style={styles.folderOpenWrap}>
+              <View style={styles.folderBreadcrumbRow}>
+                <Pressable
+                  onPress={() => setOpenedFolderKey(null)}
+                  style={styles.backFolderPill}
+                >
+                  <Text style={styles.backFolderText}>
+                    {t.photosAllFoldersBack}
+                  </Text>
+                </Pressable>
+                <Text style={styles.folderOpenTitle} numberOfLines={1}>
+                  {activeFolder.title}
+                </Text>
+              </View>
+              <View style={styles.gridWrap}>
+                {activeFolder.items.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => {
+                      setConfirmDeleteId(null);
+                      setLightboxPhotoId(item.id);
+                    }}
+                    style={[styles.gridTile, ELEVATION.card]}
+                  >
+                    <Image
+                      source={{ uri: item.thumbnailUri }}
+                      style={styles.gridTileImg}
+                    />
+                    <View style={styles.gridTileCaptionBar}>
+                      <Text style={styles.gridTilePlace} numberOfLines={1}>
+                        {item.caption || item.placeName}
+                      </Text>
+                      <Text style={styles.gridTileDate} numberOfLines={1}>
+                        {item.takenDateIso}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : wallGroupMode === 'months' ? (
+            /* Photos Grouped by Month */
+            <View style={styles.monthSectionsWrap}>
+              {monthGroups.map((group) => (
+                <View key={group.month} style={styles.monthBlock}>
+                  <View style={styles.monthHeaderRow}>
+                    <Text style={styles.monthHeading}>{group.month}</Text>
+                    <Text style={styles.monthCountText}>
+                      {t.photosFolderCount(
+                        formatInteger(group.items.length, loc)
+                      )}
+                    </Text>
+                  </View>
+                  <View style={styles.gridWrap}>
+                    {group.items.map((item) => (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => {
+                          setConfirmDeleteId(null);
+                          setLightboxPhotoId(item.id);
+                        }}
+                        style={[styles.gridTile, ELEVATION.card]}
+                      >
+                        <Image
+                          source={{ uri: item.thumbnailUri }}
+                          style={styles.gridTileImg}
+                        />
+                        <View style={styles.gridTileCaptionBar}>
+                          <Text style={styles.gridTilePlace} numberOfLines={1}>
+                            {item.placeName}
+                          </Text>
+                          <Text style={styles.gridTileDate} numberOfLines={1}>
+                            {item.takenDateIso}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
           ) : (
+            /* All Photos Wall */
             <View style={styles.gridWrap}>
+              <Pressable
+                onPress={() => handleStartAddPhoto('library')}
+                disabled={isPicking}
+                style={[styles.gridAddTile, ELEVATION.card]}
+              >
+                <View style={styles.gridAddIconCircle}>
+                  <UiIcon name="camera" size={20} color={COLORS.brandDark} />
+                </View>
+                <Text style={styles.gridAddLabel}>{t.photosAddCardLabel}</Text>
+              </Pressable>
               {photoMemories.map((item) => (
                 <Pressable
                   key={item.id}
@@ -831,6 +1104,27 @@ export const PhotoMapScreen: React.FC = () => {
                 </Text>
               ) : null}
 
+              {photoMemories.length > 1 ? (
+                <View style={styles.lightboxNavRow}>
+                  <Pressable
+                    onPress={() => stepLightboxPhoto(-1)}
+                    style={styles.lightboxNavPill}
+                  >
+                    <Text style={styles.lightboxNavText}>{t.photosPrevBtn}</Text>
+                  </Pressable>
+                  <Text style={styles.lightboxCounter}>
+                    {formatInteger(activeLightboxIndex + 1, loc)} /{' '}
+                    {formatInteger(photoMemories.length, loc)}
+                  </Text>
+                  <Pressable
+                    onPress={() => stepLightboxPhoto(1)}
+                    style={styles.lightboxNavPill}
+                  >
+                    <Text style={styles.lightboxNavText}>{t.photosNextBtn}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
               <View style={styles.lightboxActions}>
                 <Pressable
                   onPress={() => {
@@ -926,6 +1220,9 @@ const styles = StyleSheet.create({
     padding: 2.5,
   },
   modeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: 5,
     paddingHorizontal: 9,
     borderRadius: 999,
@@ -1466,6 +1763,200 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: COLORS.avoidText,
+  },
+  wallSubBar: {
+    flexDirection: 'row',
+    gap: 7,
+    marginBottom: 12,
+  },
+  wallFilterChip: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingVertical: 6.5,
+    paddingHorizontal: 12,
+  },
+  wallFilterChipActive: {
+    backgroundColor: COLORS.brandLight,
+    borderColor: COLORS.brand,
+  },
+  wallFilterChipText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  wallFilterChipTextActive: {
+    color: COLORS.brandDark,
+    fontWeight: '800',
+  },
+  folderGridWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  folderCard: {
+    width: '48.2%',
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderSubtle,
+    overflow: 'hidden',
+  },
+  folderCoverWrap: {
+    height: 126,
+    backgroundColor: COLORS.background,
+    position: 'relative',
+    padding: 6,
+  },
+  folderBackPreview: {
+    position: 'absolute',
+    top: 3,
+    left: 12,
+    right: 12,
+    height: 112,
+    borderRadius: 12,
+    opacity: 0.45,
+  },
+  folderCoverImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  folderCountPill: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(16, 35, 28, 0.78)',
+    borderRadius: 999,
+    paddingVertical: 2.5,
+    paddingHorizontal: 8,
+  },
+  folderCountPillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  folderMetaBox: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  folderTitle: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  folderSub: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  folderOpenWrap: {
+    gap: 10,
+  },
+  folderBreadcrumbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  backFolderPill: {
+    backgroundColor: COLORS.brandLight,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
+  },
+  backFolderText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  folderOpenTitle: {
+    fontFamily: UI_FONT_FAMILY,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  monthSectionsWrap: {
+    gap: 16,
+  },
+  monthBlock: {
+    gap: 8,
+  },
+  monthHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  monthHeading: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  monthCountText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+  },
+  gridAddTile: {
+    width: '31.5%',
+    aspectRatio: 0.9,
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: COLORS.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  gridAddIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.brandLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridAddLabel: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  lightboxNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  lightboxNavPill: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+  },
+  lightboxNavText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  lightboxCounter: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
   },
   pressed: {
     opacity: 0.84,
