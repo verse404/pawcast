@@ -21,7 +21,7 @@ PawCast works **100% offline/locally in Guest Mode** out of the box. When you co
 1. Open **Build → Firestore Database → Create database**.
 2. Choose **Start in production mode** and select a nearby region (e.g., `australia-southeast1` or `asia-east1`).
 3. Open the **Rules** tab, paste the exact contents of [`firestore.rules`](./firestore.rules) from this repository, and click **Publish**.
-   - These rules enforce strict per-user isolation (`request.auth.uid == userId`), explicit schema allow-listing, and document size bounds (`<= 5` dogs, `<= 50` saved parks, `<= 100` walk logs), with default-deny on every other path.
+   - These rules enforce strict per-user isolation (`request.auth.uid == userId`), explicit schema v1/v2 field allow-listing, bounded document sizes (`<= 5` dogs, `<= 20` personal secret spots, `<= 12` care reminders, `<= 15` gear items, `<= 50` saved parks, `<= 100` walk logs), non-enumerable 192-bit cryptographic invite tokens for optional Co-Walker Household sharing (`<= 4` members), and default-deny on every other path.
 
 ## Step 4: Configure Environment Variables
 

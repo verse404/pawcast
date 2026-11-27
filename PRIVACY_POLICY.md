@@ -23,12 +23,13 @@ We built PawCast with a **privacy-by-design, local-first architecture**:
   - **Apple MapKit** (on iOS) for interactive map rendering.
 - **Can you use PawCast without GPS?** Yes. You can deny location permission and manually pick any of the `2,182` built-in suburbs or search any city worldwide.
 
-### B. Dog Profile, Saved Parks & Notes (Local-First; Optional Cloud Sync)
-- **Guest Mode (Default):** Your dog profiles, unit & language preferences (`°C · km` / `°F · mi`, `EN` / `简体中文`), saved favorite parks, private park notes, and walk logs are stored **exclusively on your device** via local app storage (`AsyncStorage`). They are never transmitted to any server.
-- **Signed-In Mode (Optional):** If you choose to create an account with **Firebase Email/Password Sign-In**, PawCast stores your email address in **Firebase Authentication** and syncs your sanitized dog profiles, saved park IDs, private spot notes, walk logs, and preferences to a private per-user **Cloud Firestore** document (`users/{uid}/pawcast/profile`) restricted strictly to your authenticated user ID (`request.auth.uid == userId`).
+### B. Member Profile, Preferences, Saved Parks & Notes (Local-First; Optional Cloud Sync)
+- **Guest Mode (Default):** Your display name, dog profiles, walk routine preferences, pinned suburbs, custom secret spots, care reminder dates, gear checklist, saved favorite parks, private park notes, and walk logs are stored **exclusively on your device** via local app storage (`AsyncStorage`). They are never transmitted to any server.
+- **Signed-In Mode (Optional):** If you choose to create an account with **Firebase Email/Password Sign-In**, PawCast stores your email address and optional display name in **Firebase Authentication** and syncs your sanitized profile (`memberProfile`, `memberPreferences`, dogs, pinned suburbs, custom spots, lightweight reminder dates, gear checklist, saved parks, notes, and walk logs) to a private per-user **Cloud Firestore** document (`users/{uid}/pawcast/profile`) restricted strictly to your authenticated user ID (`request.auth.uid == userId`).
+- **Optional Household / Co-Walker Sharing:** If you explicitly create or join a shared household using a single-use cryptographic invite token (`192-bit` random code), your shared dog pack, saved parks, walk logs, and care reminders are stored in `households/{householdId}` accessible exclusively to the up to 4 authenticated members in `memberUids`. You may leave or disband a shared household at any time.
 
-### C. Optional Dog Profile Photo (Camera / Photo Library)
-- If you upload or snap a custom portrait for your dog, PawCast verifies image magic bytes (`JPEG`/`PNG`/`WebP`), crops and re-encodes the image locally on your device (`256×256`, stripping camera EXIF/GPS metadata), and stores it locally. In Guest Mode, photos never leave your device. If you opt into Cloud Sync, compact resized portraits (`<= 120 KB`) may sync inside your private per-user Firestore profile.
+### C. Optional Member & Dog Profile Photos (Camera / Photo Library)
+- If you upload or snap a custom portrait for yourself or your dog, PawCast verifies image magic bytes (`JPEG`/`PNG`/`WebP`), crops and re-encodes the image locally on your device (`256×256`, stripping camera EXIF/GPS metadata), and stores it locally. In Guest Mode, photos never leave your device. If you opt into Cloud Sync, compact resized portraits (`<= 120 KB`) sync inside your private per-user Firestore profile.
 
 ---
 

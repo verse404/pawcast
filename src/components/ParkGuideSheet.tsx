@@ -62,6 +62,7 @@ export const ParkGuideSheet: React.FC<ParkGuideSheetProps> = ({
     spotNotes,
     setSpotNote,
     logWalk,
+    memberPreferences,
   } = useWalkPlanner();
   const t = getStrings(language);
   const loc = getLocaleTag(language);
@@ -106,22 +107,28 @@ export const ParkGuideSheet: React.FC<ParkGuideSheetProps> = ({
     ? formatWalkMinutes(spot.place.distanceKm, loc)
     : `~${formatDriveMinutes(spot.place.distanceKm, loc)}`;
 
+  const resolvedMapsApp =
+    memberPreferences.preferredMapsApp === 'auto'
+      ? Platform.OS === 'ios'
+        ? 'apple'
+        : 'google'
+      : memberPreferences.preferredMapsApp;
+
   const mapsProviderLabel =
-    Platform.OS === 'ios'
-      ? language === 'zh'
-        ? '苹果地图 ↗'
-        : 'Apple Maps ↗'
-      : language === 'zh'
-        ? '谷歌地图 ↗'
-        : 'Google Maps ↗';
+    resolvedMapsApp === 'amap'
+      ? `${t.mapsAppAmap} ↗`
+      : resolvedMapsApp === 'apple'
+        ? `${t.mapsAppApple} ↗`
+        : `${t.mapsAppGoogle} ↗`;
 
   const handleOpenGateDirections = () => {
     const url = buildSafeDirectionsUrl(
       guide.gateLatitude,
       guide.gateLongitude,
       `${guide.englishTitle} (${guide.gateLabel})`,
-      Platform.OS === 'ios',
-      travelMode
+      memberPreferences.preferredMapsApp,
+      travelMode,
+      Platform.OS === 'ios'
     );
     if (url) {
       Linking.openURL(url).catch(() => {});
@@ -136,6 +143,10 @@ export const ParkGuideSheet: React.FC<ParkGuideSheetProps> = ({
   const activeRegion = detectActiveRegion(location.latitude, location.longitude);
   const isShanghai = activeRegion === 'shanghai';
   const shareableUrl = buildShareableSpotUrl(spot.place.id);
+
+  const customSignatureLine = memberPreferences.inviteSignature.trim()
+    ? [`💬 ${memberPreferences.inviteSignature.trim()}`]
+    : [];
 
   const inviteCardText =
     language === 'zh'
@@ -157,6 +168,7 @@ export const ParkGuideSheet: React.FC<ParkGuideSheetProps> = ({
                   ? '开放式可松绳草坪'
                   : '牵绳漫步'
           }`,
+          ...customSignatureLine,
           ...(shareableUrl ? [`🔗 ${shareableUrl}`] : []),
         ].join('\n')
       : isShanghai
@@ -174,6 +186,7 @@ export const ParkGuideSheet: React.FC<ParkGuideSheetProps> = ({
                 ? 'Fenced Off-Leash'
                 : 'Leashed Walk'
             }`,
+            ...customSignatureLine,
             ...(shareableUrl ? [`🔗 ${shareableUrl}`] : []),
           ].join('\n')
         : [
@@ -200,6 +213,7 @@ export const ParkGuideSheet: React.FC<ParkGuideSheetProps> = ({
                     ? 'Council Off-Leash Reserve'
                     : 'On-Leash Walk'
             }`,
+            ...customSignatureLine,
             ...(shareableUrl ? [`🔗 ${shareableUrl}`] : []),
           ].join('\n');
 

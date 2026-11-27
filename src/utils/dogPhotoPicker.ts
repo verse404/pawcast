@@ -107,7 +107,11 @@ function renderCroppedSquareOnWeb(
         ctx.fillRect(0, 0, outputSize, outputSize);
         ctx.drawImage(img, sx, sy, side, side, 0, 0, outputSize, outputSize);
 
-        const rawDataUri = canvas.toDataURL('image/jpeg', 0.86);
+        // Re-encode with adaptive JPEG quality so portraits stay compact (< 115 KB) for Firestore Cloud Sync
+        let rawDataUri = canvas.toDataURL('image/jpeg', 0.82);
+        if (rawDataUri.length > 115_000) {
+          rawDataUri = canvas.toDataURL('image/jpeg', 0.65);
+        }
         resolve(sanitizeAvatarDataUri(rawDataUri));
       } catch {
         resolve(null);

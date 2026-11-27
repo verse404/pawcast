@@ -65,6 +65,8 @@ export const ExploreMapScreen: React.FC<ExploreMapScreenProps> = ({
     savedPlaceIds,
     selectedHour,
     scoredPlaces,
+    memberPreferences,
+    saveDefaultMapFilters,
   } = useWalkPlanner();
   const t = getStrings(language);
   const loc = getLocaleTag(language);
@@ -77,14 +79,28 @@ export const ExploreMapScreen: React.FC<ExploreMapScreenProps> = ({
   );
   const [showStreetsOverlay, setShowStreetsOverlay] = useState(true);
 
-  const [beachesOnly, setBeachesOnly] = useState(false);
-  const [fencedOnly, setFencedOnly] = useState(false);
-  const [offLeashOnly, setOffLeashOnly] = useState(false);
-  const [shadedOnly, setShadedOnly] = useState(false);
-  const [walkableOnly, setWalkableOnly] = useState(false);
-  const [pavedOnly, setPavedOnly] = useState(false);
-  const [savedOnly, setSavedOnly] = useState(false);
-  const [openOnly, setOpenOnly] = useState(false);
+  const defF = memberPreferences.defaultMapFilters;
+  const [beachesOnly, setBeachesOnly] = useState(defF.beachesOnly);
+  const [fencedOnly, setFencedOnly] = useState(defF.fencedOnly);
+  const [offLeashOnly, setOffLeashOnly] = useState(defF.offLeashOnly);
+  const [shadedOnly, setShadedOnly] = useState(defF.shadedOnly);
+  const [walkableOnly, setWalkableOnly] = useState(defF.walkableOnly);
+  const [pavedOnly, setPavedOnly] = useState(defF.pavedOnly);
+  const [savedOnly, setSavedOnly] = useState(defF.savedOnly);
+  const [openOnly, setOpenOnly] = useState(defF.openOnly);
+  const [savedDefaultToast, setSavedDefaultToast] = useState(false);
+
+  useEffect(() => {
+    const f = memberPreferences.defaultMapFilters;
+    setBeachesOnly(f.beachesOnly);
+    setFencedOnly(f.fencedOnly);
+    setOffLeashOnly(f.offLeashOnly);
+    setShadedOnly(f.shadedOnly);
+    setWalkableOnly(f.walkableOnly);
+    setPavedOnly(f.pavedOnly);
+    setSavedOnly(f.savedOnly);
+    setOpenOnly(f.openOnly);
+  }, [memberPreferences.defaultMapFilters]);
 
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
   const [listSheetOpen, setListSheetOpen] = useState(false);
@@ -237,8 +253,9 @@ export const ExploreMapScreen: React.FC<ExploreMapScreenProps> = ({
       guide.gateLatitude,
       guide.gateLongitude,
       `${guide.englishTitle} (${guide.gateLabel})`,
-      Platform.OS === 'ios',
-      travelMode
+      memberPreferences.preferredMapsApp,
+      travelMode,
+      Platform.OS === 'ios'
     );
     if (url) {
       Linking.openURL(url).catch(() => {});
@@ -246,7 +263,11 @@ export const ExploreMapScreen: React.FC<ExploreMapScreenProps> = ({
   };
 
   const handleOpenLoopDirections = (loop: DoorstepLoopPlan) => {
-    const url = buildSafeLoopUrl(loop.coordinates, Platform.OS === 'ios');
+    const url = buildSafeLoopUrl(
+      loop.coordinates,
+      memberPreferences.preferredMapsApp,
+      Platform.OS === 'ios'
+    );
     if (url) {
       Linking.openURL(url).catch(() => {});
     }
@@ -592,8 +613,9 @@ export const ExploreMapScreen: React.FC<ExploreMapScreenProps> = ({
                       start[0],
                       start[1],
                       selectedCorridor.name,
-                      Platform.OS === 'ios',
-                      'walking'
+                      memberPreferences.preferredMapsApp,
+                      'walking',
+                      Platform.OS === 'ios'
                     );
                     if (url) Linking.openURL(url).catch(() => {});
                   }}
@@ -742,6 +764,29 @@ export const ExploreMapScreen: React.FC<ExploreMapScreenProps> = ({
             <View style={styles.sheetHeaderRow}>
               <Text style={styles.sheetTitle}>{t.mapFiltersTitle}</Text>
               <View style={styles.sheetHeaderBtns}>
+                <Pressable
+                  onPress={() => {
+                    saveDefaultMapFilters({
+                      beachesOnly,
+                      fencedOnly,
+                      offLeashOnly,
+                      shadedOnly,
+                      walkableOnly,
+                      pavedOnly,
+                      savedOnly,
+                      openOnly,
+                    });
+                    setSavedDefaultToast(true);
+                    setTimeout(() => setSavedDefaultToast(false), 1800);
+                  }}
+                  style={styles.resetPill}
+                >
+                  <Text style={styles.resetPillText}>
+                    {savedDefaultToast
+                      ? t.savedDefaultFiltersToast
+                      : t.saveFiltersAsDefaultBtn}
+                  </Text>
+                </Pressable>
                 {activeFilterCount > 0 ? (
                   <Pressable onPress={resetAllFilters} style={styles.resetPill}>
                     <Text style={styles.resetPillText}>{t.resetBtn}</Text>

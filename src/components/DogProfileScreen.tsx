@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   Modal,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +16,12 @@ import {
   SYDNEY_PILOT_SPOTS,
 } from '../constants/auPresets';
 import { detectActiveRegion } from '../constants/auSuburbs';
+import {
+  buildWalkLogsCsv,
+  buildWalkLogsJson,
+  daysUntilIsoDate,
+  WALK_LOG_TAG_KEYS,
+} from '../constants/memberDefaults';
 import { resolveParkPhotoUri } from '../constants/parkPhotos';
 import { BREED_PRESETS, SHANGHAI_PILOT_SPOTS } from '../constants/presets';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +49,7 @@ import {
   DogSize,
   PawSensitivity,
   UnitSystem,
+  WalkLogTag,
   WalkPlace,
 } from '../types/walk';
 import {
@@ -50,6 +59,7 @@ import {
 import { splitSpotDisplayName } from '../utils/spotGuide';
 import { AuthModal, AuthModalMode } from './AuthModal';
 import { DogAvatar } from './DogAvatar';
+import { MemberHubModal, MemberHubTab } from './MemberHubModal';
 import { ParkGuideSheet } from './ParkGuideSheet';
 import {
   ParkScenicBadge,
@@ -79,6 +89,12 @@ function getSweetSpotRangeC(dog: DogProfile): { lowC: number; highC: number } {
   if (dog.ageGroup === 'senior' || dog.ageGroup === 'puppy') {
     lowC += 1.5;
     highC -= 1;
+  }
+  if (
+    typeof dog.customMaxTempC === 'number' &&
+    Number.isFinite(dog.customMaxTempC)
+  ) {
+    highC = dog.customMaxTempC;
   }
   return { lowC: Math.round(lowC), highC: Math.round(highC) };
 }
@@ -152,6 +168,9 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
     scoredPlaces,
     savedPlaceIds,
     toggleSavedPlace,
+    memberProfile,
+    memberPreferences,
+    careReminders,
     syncCloudNow,
   } = useWalkPlanner();
   const {
@@ -187,8 +206,12 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
 
   const [nameDraft, setNameDraft] = useState(editingDog.name);
   const [showAllWalkLogs, setShowAllWalkLogs] = useState(false);
+  const [selectedWalkTags, setSelectedWalkTags] = useState<WalkLogTag[]>([]);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('signin');
+  const [memberHubOpen, setMemberHubOpen] = useState(false);
+  const [memberHubTab, setMemberHubTab] = useState<MemberHubTab>('profile');
   const [verifyNotice, setVerifyNotice] = useState<string | null>(null);
   const [isSendingVerify, setIsSendingVerify] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -261,6 +284,69 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
     () => computeWalkStreakStats(walkLogs),
     [walkLogs]
   );
+
+  const upcomingReminder = useMemo(() => {
+    if (careReminders.length === 0) return null;
+    const soonest = careReminders[0];
+    const days = daysUntilIsoDate(soonest.dueDateIso);
+    return days <= 45 ? { reminder: soonest, days } : null;
+  }, [careReminders]);
+
+  const walkTagLabel = (tag: WalkLogTag): string => {
+    switch (tag) {
+      case 'hydrated':
+        return t.walkTagHydrated;
+      case 'good_recall':
+        return t.walkTagRecall;
+      case 'potty':
+        return t.walkTagPotty;
+      case 'paw_check':
+        return t.walkTagPaws;
+      case 'hot':
+        return t.walkTagHot;
+      default:
+        return t.walkTagSocial;
+    }
+  };
+
+  const handleExportWalkLogs = async (fmt: 'csv' | 'json') => {
+    if (walkLogs.length === 0) return;
+    const content =
+      fmt === 'csv' ? buildWalkLogsCsv(walkLogs) : buildWalkLogsJson(walkLogs);
+    if (Platform.OS === 'web') {
+      const g = globalThis as unknown as {
+        Blob?: new (parts: unknown[], opts?: { type?: string }) => unknown;
+        URL?: {
+          createObjectURL: (b: unknown) => string;
+          revokeObjectURL: (u: string) => void;
+        };
+        document?: {
+          createElement: (tag: string) => {
+            href: string;
+            download: string;
+            click: () => void;
+          };
+        };
+      };
+      if (g.Blob && g.URL && g.document) {
+        const mime =
+          fmt === 'csv'
+            ? 'text/csv;charset=utf-8'
+            : 'application/json;charset=utf-8';
+        const blob = new g.Blob([content], { type: mime });
+        const url = g.URL.createObjectURL(blob);
+        const link = g.document.createElement('a');
+        link.href = url;
+        link.download = `pawcast-walks.${fmt}`;
+        link.click();
+        g.URL.revokeObjectURL(url);
+      }
+    } else {
+      await Share.share({ message: content }).catch(() => {});
+    }
+    setExportNotice(t.walkExportedToast);
+    setTimeout(() => setExportNotice(null), 2000);
+  };
 
   const { lowC, highC } = useMemo(() => getSweetSpotRangeC(dog), [dog]);
 
@@ -784,7 +870,7 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
               <Text style={styles.cardTitle}>{t.walkStreakJournalTitle}</Text>
             </View>
             <Pressable
-              onPress={() =>
+              onPress={() => {
                 logWalk({
                   placeId: scoredPlaces[0]?.place.id || 'quick-stroll',
                   placeName: scoredPlaces[0]
@@ -794,10 +880,12 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
                       ? `${location.name} 遛狗`
                       : `${location.name} Walk`,
                   cityLabel: location.name.split(' · ')[0] || 'Local',
-                  durationMin: 25,
+                  durationMin: memberPreferences.defaultLoopDuration || 25,
                   distanceKm: 1.8,
-                })
-              }
+                  tags: selectedWalkTags,
+                });
+                setSelectedWalkTags([]);
+              }}
               style={({ pressed }) => [
                 styles.quickLogPill,
                 pressed && styles.pressed,
@@ -828,6 +916,94 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
             </View>
           </View>
 
+          {/* Weekly Walk Goal Progress */}
+          <View style={styles.goalWrap}>
+            <View style={styles.goalHeaderRow}>
+              <Text style={styles.goalLabel}>
+                {t.walkGoalProgressLabel(
+                  formatInteger(streakStats.walksThisWeek, loc),
+                  formatInteger(memberPreferences.weeklyWalkGoal, loc)
+                )}
+              </Text>
+              {walkLogs.length > 0 ? (
+                <View style={styles.exportBtnsRow}>
+                  {exportNotice ? (
+                    <Text style={styles.exportNoticeText}>{exportNotice}</Text>
+                  ) : null}
+                  <Pressable
+                    onPress={() => handleExportWalkLogs('csv')}
+                    style={styles.exportTinyPill}
+                  >
+                    <Text style={styles.exportTinyPillText}>
+                      {t.walkExportCsvBtn}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleExportWalkLogs('json')}
+                    style={styles.exportTinyPill}
+                  >
+                    <Text style={styles.exportTinyPillText}>
+                      {t.walkExportJsonBtn}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.goalTrack}>
+              <View
+                style={[
+                  styles.goalFill,
+                  {
+                    width: `${Math.min(
+                      100,
+                      Math.round(
+                        (streakStats.walksThisWeek /
+                          Math.max(1, memberPreferences.weeklyWalkGoal)) *
+                          100
+                      )
+                    )}%`,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Quick Post-Walk Tag Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.walkTagStrip}
+          >
+            {WALK_LOG_TAG_KEYS.map((tg) => {
+              const active = selectedWalkTags.includes(tg);
+              return (
+                <Pressable
+                  key={tg}
+                  onPress={() =>
+                    setSelectedWalkTags((prev) =>
+                      prev.includes(tg)
+                        ? prev.filter((x) => x !== tg)
+                        : [...prev, tg]
+                    )
+                  }
+                  style={[
+                    styles.walkTagChip,
+                    active && styles.walkTagChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.walkTagChipText,
+                      active && styles.walkTagChipTextActive,
+                    ]}
+                  >
+                    {walkTagLabel(tg)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
           {walkLogs.length > 0 ? (
             <View style={styles.walkLogsList}>
               {(showAllWalkLogs ? walkLogs.slice(0, 20) : walkLogs.slice(0, 3)).map(
@@ -844,12 +1020,24 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
                         <Text style={styles.walkLogTitle} numberOfLines={1}>
                           {entry.placeName}
                         </Text>
-                        <Text style={styles.walkLogMeta} numberOfLines={1}>
+                        <Text style={styles.walkLogMeta} numberOfLines={2}>
                           {whenStr} · {formatInteger(entry.durationMin, loc)}{' '}
                           {t.minShort} ·{' '}
                           {formatDistance(entry.distanceKm, units, loc)} ·{' '}
                           {entry.dogNames.join(language === 'zh' ? '、' : ' & ')}
+                          {entry.loggedBy
+                            ? ` · ${t.walkLoggedByPrefix} ${entry.loggedBy}`
+                            : ''}
                         </Text>
+                        {entry.tags && entry.tags.length > 0 ? (
+                          <View style={styles.loggedTagsRow}>
+                            {entry.tags.map((tg) => (
+                              <Text key={tg} style={styles.loggedTagPill}>
+                                {walkTagLabel(tg)}
+                              </Text>
+                            ))}
+                          </View>
+                        ) : null}
                       </View>
                       <Pressable
                         onPress={() => deleteWalkLog(entry.id)}
@@ -935,6 +1123,66 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
               </Text>
             </View>
           </View>
+
+          {/* Member Identity Row (Display Name + Uploaded Photo) */}
+          <Pressable
+            onPress={() => {
+              setMemberHubTab('profile');
+              setMemberHubOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.memberIdentityBanner,
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.memberMiniAvatar}>
+              {memberProfile.avatarUri ? (
+                <Image
+                  source={{ uri: memberProfile.avatarUri }}
+                  style={styles.memberMiniAvatarImg}
+                />
+              ) : (
+                <Text style={styles.memberMiniAvatarInitial}>
+                  {(memberProfile.displayName.trim() || user?.displayName || 'P')
+                    .slice(0, 1)
+                    .toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={styles.memberIdentityCol}>
+              <Text style={styles.memberIdentityName} numberOfLines={1}>
+                {memberProfile.displayName.trim() ||
+                  user?.displayName ||
+                  t.accountGuestName}
+              </Text>
+              <Text style={styles.memberIdentityMeta} numberOfLines={1}>
+                {t.accountOpenHubBtn}
+              </Text>
+            </View>
+            <UiIcon name="chevronRight" size={16} color={COLORS.brandDark} />
+          </Pressable>
+
+          {upcomingReminder ? (
+            <Pressable
+              onPress={() => {
+                setMemberHubTab('care');
+                setMemberHubOpen(true);
+              }}
+              style={styles.reminderCalloutPill}
+            >
+              <UiIcon name="clock" size={14} color={COLORS.cautionText} />
+              <Text style={styles.reminderCalloutText} numberOfLines={1}>
+                {upcomingReminder.reminder.title} ·{' '}
+                {upcomingReminder.days < 0
+                  ? t.memberReminderOverdue
+                  : upcomingReminder.days === 0
+                    ? t.memberReminderDueToday
+                    : t.memberReminderDueInDays(
+                        formatInteger(upcomingReminder.days, loc)
+                      )}
+              </Text>
+            </Pressable>
+          ) : null}
 
           {user ? (
             <View style={styles.accountSignedInBody}>
@@ -1120,6 +1368,18 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
         visible={authModalOpen}
         initialMode={authModalMode}
         onClose={() => setAuthModalOpen(false)}
+      />
+
+      {/* Member Hub: User Name/Photo, Tier 1 Preferences & Tier 2 Features */}
+      <MemberHubModal
+        visible={memberHubOpen}
+        initialTab={memberHubTab}
+        onClose={() => setMemberHubOpen(false)}
+        onOpenAuthSignIn={() => {
+          setAuthModalMode('signin');
+          setAuthModalOpen(true);
+        }}
+        onShowSpotOnMap={onShowSpotOnMap}
       />
 
       {/* Slide-Up Edit Profile & Photo Sheet */}
@@ -1541,6 +1801,154 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
                   {editingDog.brachycephalic ? '✓' : '○'}
                 </Text>
               </Pressable>
+
+              {/* Tier 1 Dog Temperament, Weather Quirks & Custom Ceiling */}
+              <View style={styles.editBlock}>
+                <Text style={styles.editSectionLabel}>
+                  {t.dogQuirksSectionLabel}
+                </Text>
+
+                <Pressable
+                  onPress={() =>
+                    updateDog(
+                      { quietMode: !editingDog.quietMode },
+                      editingDog.id || 'dog-primary'
+                    )
+                  }
+                  style={[
+                    styles.toggleBannerCard,
+                    editingDog.quietMode && styles.toggleBannerGreen,
+                  ]}
+                >
+                  <UiIcon
+                    name="forest"
+                    size={17}
+                    color={
+                      editingDog.quietMode
+                        ? COLORS.brandDark
+                        : COLORS.textSecondary
+                    }
+                  />
+                  <View style={styles.toggleTextCol}>
+                    <Text style={styles.toggleTitle}>{t.dogQuietModeTitle}</Text>
+                    <Text style={styles.toggleSubtitle}>
+                      {t.dogQuietModeSub}
+                    </Text>
+                  </View>
+                  <Text style={styles.toggleCheck}>
+                    {editingDog.quietMode ? '✓' : '○'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() =>
+                    updateDog(
+                      { hatesRain: !editingDog.hatesRain },
+                      editingDog.id || 'dog-primary'
+                    )
+                  }
+                  style={[
+                    styles.toggleBannerCard,
+                    editingDog.hatesRain && styles.toggleBannerGreen,
+                  ]}
+                >
+                  <UiIcon
+                    name="water"
+                    size={17}
+                    color={
+                      editingDog.hatesRain
+                        ? COLORS.brandDark
+                        : COLORS.textSecondary
+                    }
+                  />
+                  <View style={styles.toggleTextCol}>
+                    <Text style={styles.toggleTitle}>{t.dogHatesRainTitle}</Text>
+                    <Text style={styles.toggleSubtitle}>
+                      {t.dogHatesRainSub}
+                    </Text>
+                  </View>
+                  <Text style={styles.toggleCheck}>
+                    {editingDog.hatesRain ? '✓' : '○'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() =>
+                    updateDog(
+                      { lovesWater: !editingDog.lovesWater },
+                      editingDog.id || 'dog-primary'
+                    )
+                  }
+                  style={[
+                    styles.toggleBannerCard,
+                    editingDog.lovesWater && styles.toggleBannerGreen,
+                  ]}
+                >
+                  <UiIcon
+                    name="sun"
+                    size={17}
+                    color={
+                      editingDog.lovesWater
+                        ? COLORS.brandDark
+                        : COLORS.textSecondary
+                    }
+                  />
+                  <View style={styles.toggleTextCol}>
+                    <Text style={styles.toggleTitle}>
+                      {t.dogLovesWaterTitle}
+                    </Text>
+                    <Text style={styles.toggleSubtitle}>
+                      {t.dogLovesWaterSub}
+                    </Text>
+                  </View>
+                  <Text style={styles.toggleCheck}>
+                    {editingDog.lovesWater ? '✓' : '○'}
+                  </Text>
+                </Pressable>
+
+                <View style={styles.customTempRow}>
+                  <Text style={styles.customTempLabel}>
+                    {t.dogCustomMaxTempLabel}
+                  </Text>
+                  <View style={styles.customTempControls}>
+                    <Pressable
+                      onPress={() => {
+                        const cur = editingDog.customMaxTempC;
+                        updateDog(
+                          {
+                            customMaxTempC:
+                              cur == null ? 21 : cur <= 15 ? null : cur - 1,
+                          },
+                          editingDog.id || 'dog-primary'
+                        );
+                      }}
+                      style={styles.customTempBtn}
+                    >
+                      <Text style={styles.customTempBtnText}>−</Text>
+                    </Pressable>
+                    <Text style={styles.customTempValue}>
+                      {editingDog.customMaxTempC == null
+                        ? t.dogCustomMaxTempAuto
+                        : formatTemperature(editingDog.customMaxTempC, units, loc)}
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        const cur = editingDog.customMaxTempC;
+                        updateDog(
+                          {
+                            customMaxTempC:
+                              cur == null ? 22 : cur >= 30 ? 30 : cur + 1,
+                          },
+                          editingDog.id || 'dog-primary'
+                        );
+                      }}
+                      style={styles.customTempBtn}
+                    >
+                      <Text style={styles.customTempBtnText}>+</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
 
               {/* App Language Selector (English / Mandarin) */}
               <View style={styles.editBlock}>
@@ -2512,6 +2920,210 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.6,
+  },
+  goalWrap: {
+    gap: 5,
+  },
+  goalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  goalLabel: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  goalTrack: {
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: COLORS.background,
+    overflow: 'hidden',
+  },
+  goalFill: {
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: COLORS.brand,
+  },
+  exportBtnsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  exportNoticeText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  exportTinyPill: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  exportTinyPillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  walkTagStrip: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 2,
+  },
+  walkTagChip: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.borderSubtle,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+  },
+  walkTagChipActive: {
+    backgroundColor: COLORS.brandLight,
+    borderColor: COLORS.brand,
+  },
+  walkTagChipText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  walkTagChipTextActive: {
+    color: COLORS.brandDark,
+  },
+  loggedTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 3,
+  },
+  loggedTagPill: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.brandDark,
+    backgroundColor: COLORS.brandLight,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  memberIdentityBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.borderSubtle,
+    borderRadius: 15,
+    padding: 10,
+  },
+  memberMiniAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.brandLight,
+    borderWidth: 1.5,
+    borderColor: COLORS.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  memberMiniAvatarImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  memberMiniAvatarInitial: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  memberIdentityCol: {
+    flex: 1,
+    gap: 1,
+  },
+  memberIdentityName: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  memberIdentityMeta: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: COLORS.brandDark,
+  },
+  reminderCalloutPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: COLORS.cautionBg,
+    borderWidth: 1,
+    borderColor: COLORS.cautionBorder,
+    borderRadius: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+  },
+  reminderCalloutText: {
+    fontFamily: UI_FONT_FAMILY,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.cautionText,
+  },
+  customTempRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  customTempLabel: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  customTempControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  customTempBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.brandLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customTempBtnText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  customTempValue: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+    minWidth: 58,
+    textAlign: 'center',
   },
   pressed: {
     opacity: 0.84,

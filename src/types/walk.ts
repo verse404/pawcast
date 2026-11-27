@@ -30,6 +30,14 @@ export interface DogProfile {
   hasDogLicense: boolean;
   /** Optional user-uploaded square-cropped dog portrait (`data:image/(jpeg|png|webp);base64,...`). */
   customPhotoUri?: string | null;
+  /** Tier 1 temperament: prefers calmer streets & less crowded parks. */
+  quietMode?: boolean;
+  /** Tier 1 quirk: extra avoidance of rain and post-rain wet grass/puddles. */
+  hatesRain?: boolean;
+  /** Tier 1 quirk: boosts safe dog beaches and breezy waterfront spots. */
+  lovesWater?: boolean;
+  /** Optional custom comfort temperature ceiling in °C (15..30). */
+  customMaxTempC?: number | null;
 }
 
 export interface LocationPoint {
@@ -231,6 +239,14 @@ export interface ForecastBundle {
   fetchedAtEpochMs: number;
 }
 
+export type WalkLogTag =
+  | 'hydrated'
+  | 'good_recall'
+  | 'potty'
+  | 'paw_check'
+  | 'hot'
+  | 'social';
+
 export interface WalkLogEntry {
   id: string;
   timestampMs: number;
@@ -240,4 +256,95 @@ export interface WalkLogEntry {
   durationMin: number;
   distanceKm: number;
   dogNames: string[];
+  tags?: WalkLogTag[];
+  note?: string;
+  loggedBy?: string;
+}
+
+export type PreferredMapsApp = 'auto' | 'apple' | 'google' | 'amap';
+
+export interface MemberProfile {
+  displayName: string;
+  avatarUri?: string | null;
+}
+
+export interface PinnedLocation {
+  id: string;
+  label: string;
+  location: LocationPoint;
+}
+
+export interface DefaultMapFilters {
+  beachesOnly: boolean;
+  fencedOnly: boolean;
+  offLeashOnly: boolean;
+  shadedOnly: boolean;
+  walkableOnly: boolean;
+  pavedOnly: boolean;
+  savedOnly: boolean;
+  openOnly: boolean;
+}
+
+export interface MemberPreferences {
+  pinnedLocations: PinnedLocation[];
+  morningWalkHour: number | null;
+  eveningWalkHour: number | null;
+  defaultLoopDuration: LoopDurationMinutes;
+  preferredMapsApp: PreferredMapsApp;
+  defaultMapFilters: DefaultMapFilters;
+  inviteSignature: string;
+  weeklyWalkGoal: number;
+  weeklyKmGoal: number;
+}
+
+export interface CustomWalkSpot {
+  id: string;
+  name: string;
+  category: PlaceCategory;
+  latitude: number;
+  longitude: number;
+  suburbLabel: string;
+  note: string;
+  tags: string[];
+  createdAtMs: number;
+}
+
+export type CareReminderType =
+  | 'rego'
+  | 'rabies'
+  | 'flea_tick'
+  | 'grooming'
+  | 'custom';
+
+export interface CareReminder {
+  id: string;
+  dogName: string;
+  type: CareReminderType;
+  title: string;
+  /** Strict `YYYY-MM-DD` date string (never raw ID/medical document). */
+  dueDateIso: string;
+  repeatMonths: 0 | 1 | 3 | 6 | 12;
+}
+
+export type GearTrigger = 'always' | 'hot_paws' | 'rain' | 'night' | 'license';
+
+export interface GearChecklistItem {
+  id: string;
+  label: string;
+  trigger: GearTrigger;
+  checked: boolean;
+}
+
+export interface HouseholdMemberEntry {
+  uid: string;
+  displayName: string;
+  isOwner: boolean;
+}
+
+export interface HouseholdSummary {
+  id: string;
+  ownerUid: string;
+  members: HouseholdMemberEntry[];
+  activeInviteToken?: string | null;
+  updatedAtMs: number;
 }

@@ -447,13 +447,22 @@ export const WalkNowScreen: React.FC<WalkNowScreenProps> = ({
     selectedHourIndex,
     setSelectedHourIndex,
     scoredPlaces,
+    memberPreferences,
+    gearChecklist,
+    toggleGearItem,
   } = useWalkPlanner();
   const t = getStrings(language);
   const loc = getLocaleTag(language);
 
   const [intentMode, setIntentMode] = useState<WalkIntentMode>('parks');
   const [showTimeline, setShowTimeline] = useState(false);
-  const [loopDuration, setLoopDuration] = useState<LoopDurationMinutes>(30);
+  const [loopDuration, setLoopDuration] = useState<LoopDurationMinutes>(
+    memberPreferences.defaultLoopDuration
+  );
+
+  useEffect(() => {
+    setLoopDuration(memberPreferences.defaultLoopDuration);
+  }, [memberPreferences.defaultLoopDuration]);
   const [activeGuideSpotId, setActiveGuideSpotId] = useState<string | null>(
     null
   );
@@ -575,9 +584,29 @@ export const WalkNowScreen: React.FC<WalkNowScreenProps> = ({
   const activeGuideSpot =
     activeGuideSpotIndex >= 0 ? scoredPlaces[activeGuideSpotIndex] : null;
 
+  const activeGearItems = useMemo(() => {
+    if (!selectedHour || gearChecklist.length === 0) return [];
+    const w = selectedHour.weather;
+    const isHotPaws = selectedHour.pawTier !== 'safe';
+    const isRain =
+      w.precipProb >= 35 || w.precipMm >= 0.3 || selectedHour.isPostRainWetTurf;
+    const isNight = !w.isDay;
+    const needsLicense = activeRegion === 'shanghai' || dog.hasDogLicense;
+
+    return gearChecklist.filter((item) => {
+      if (item.trigger === 'always') return true;
+      if (item.trigger === 'hot_paws') return isHotPaws;
+      if (item.trigger === 'rain') return isRain;
+      if (item.trigger === 'night') return isNight;
+      if (item.trigger === 'license') return needsLicense;
+      return false;
+    });
+  }, [gearChecklist, selectedHour, activeRegion, dog.hasDogLicense]);
+
   const handleStartLoopInMaps = () => {
     const url = buildSafeLoopUrl(
       activeLoopPlan.coordinates,
+      memberPreferences.preferredMapsApp,
       Platform.OS === 'ios'
     );
     if (url) {
@@ -913,10 +942,16 @@ export const WalkNowScreen: React.FC<WalkNowScreenProps> = ({
                 {scoredHours.slice(0, 24).map((hr, idx) => {
                   const isSel = idx === selectedHourIndex;
                   const qColors = getQualityColors(hr.qualityTier);
+                  const hour24 = new Date(hr.weather.epochMs).getHours();
+                  const isUsualHour =
+                    (memberPreferences.morningWalkHour !== null &&
+                      hour24 === memberPreferences.morningWalkHour) ||
+                    (memberPreferences.eveningWalkHour !== null &&
+                      hour24 === memberPreferences.eveningWalkHour);
                   const slotLabel =
                     idx === 0
                       ? t.nowShort
-                      : formatShortHour(hr.weather.epochMs, tz, loc);
+                      : `${isUsualHour ? '★ ' : ''}${formatShortHour(hr.weather.epochMs, tz, loc)}`;
                   const barHeight = Math.max(
                     8,
                     Math.round((hr.walkScore / 100) * 22)
@@ -966,6 +1001,39 @@ export const WalkNowScreen: React.FC<WalkNowScreenProps> = ({
             </View>
           ) : null}
         </View>
+
+        {/* Weather-Triggered Gear Strip */}
+        {activeGearItems.length > 0 ? (
+          <View style={styles.gearStripWrap}>
+            <Text style={styles.gearStripTitle}>{t.packForWalkTitle}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.gearStripScroll}
+            >
+              {activeGearItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={() => toggleGearItem(item.id)}
+                  style={[
+                    styles.gearStripPill,
+                    item.checked && styles.gearStripPillChecked,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.gearStripPillText,
+                      item.checked && styles.gearStripPillTextChecked,
+                    ]}
+                  >
+                    {item.checked ? '✓ ' : '○ '}
+                    {item.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
 
         {/* 2. Sculpted Two-Way Intent Switch: Top Parks vs. Circular Walk From My Door */}
         <View style={styles.intentSegmentedBar}>
@@ -2034,5 +2102,40 @@ const styles = StyleSheet.create({
   pressedCard: {
     opacity: 0.88,
     transform: [{ scale: 0.99 }],
+  },
+  gearStripWrap: {
+    gap: 5,
+  },
+  gearStripTitle: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+    paddingHorizontal: 2,
+  },
+  gearStripScroll: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  gearStripPill: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  gearStripPillChecked: {
+    backgroundColor: COLORS.brandLight,
+    borderColor: COLORS.brand,
+  },
+  gearStripPillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  gearStripPillTextChecked: {
+    color: COLORS.brandDark,
   },
 });

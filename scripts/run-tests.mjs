@@ -49,6 +49,8 @@ function loadTsModule(relPath) {
     Map,
     RegExp,
     JSON,
+    Uint8Array,
+    crypto: globalThis.crypto,
     require: (spec) => {
       if (spec === 'react-native') {
         return { Platform: { OS: 'web' } };
@@ -74,6 +76,7 @@ const parkPhotos = loadTsModule('src/constants/parkPhotos.ts');
 const deepLinks = loadTsModule('src/utils/deepLinks.ts');
 const translations = loadTsModule('src/i18n/translations.ts');
 const spotGuide = loadTsModule('src/utils/spotGuide.ts');
+const memberDefaults = loadTsModule('src/constants/memberDefaults.ts');
 
 let passed = 0;
 let failed = 0;
@@ -419,6 +422,93 @@ test('Email masking hides PII and Firebase auth errors prevent account enumerati
     assert.ok(/[\u4e00-\u9fff]/.test(zhMsg), `Missing ZH error message for ${key}`);
     assert.ok(!zhMsg.includes('溜'), `Found forbidden 溜 in ZH auth error ${key}`);
   }
+});
+
+// 10. Member Profile, Tier 1 & Tier 2 Sync, CSV Safety, AMap Allow-list & Dog Quirks
+test('Member profile, Tier 1 preferences, secret spots, reminders, and CSV export sanitize untrusted inputs', () => {
+  const prof = memberDefaults.parseMemberProfile({
+    displayName: '  <b>Sarah</b>  ',
+    avatarUri: 'data:image/svg+xml;base64,PHN2Zz4=',
+  });
+  assert.equal(prof.displayName, 'b Sarah /b');
+  assert.equal(prof.avatarUri, null);
+
+  const validImg = memberDefaults.parseMemberProfile({
+    displayName: 'Sarah',
+    avatarUri: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
+  });
+  assert.equal(validImg.avatarUri, 'data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+
+  // High-entropy household invite tokens (192-bit CSPRNG)
+  const tok = validation.generateSecureInviteToken(24);
+  assert.match(tok, /^PAW-[a-f0-9]{48}$/);
+  assert.equal(validation.sanitizeInviteToken(tok.toUpperCase()), tok);
+  assert.equal(validation.sanitizeInviteToken('PAW-1234'), null);
+  assert.equal(validation.sanitizeInviteToken('../etc/passwd'), null);
+
+  // CSV formula-injection neutralization
+  assert.equal(validation.escapeCsvCell('=CMD("calc")'), `"'=CMD(""calc"")"` );
+  assert.equal(validation.escapeCsvCell('+1+2'), "'+1+2");
+  const csv = memberDefaults.buildWalkLogsCsv([
+    {
+      id: 'w1',
+      timestampMs: Date.parse('2026-11-27T08:00:00Z'),
+      placeId: 'p1',
+      placeName: '=HYPERLINK("http://evil")',
+      cityLabel: 'Melbourne',
+      durationMin: 30,
+      distanceKm: 2.1,
+      dogNames: ['Pudding'],
+      tags: ['hydrated'],
+      loggedBy: 'Sarah',
+    },
+  ]);
+  assert.ok(csv.includes(`"'=HYPERLINK(""http://evil"")"`));
+
+  // Preferred maps app allow-list including AMap (高德地图)
+  const amapUrl = validation.buildSafeDirectionsUrl(31.2118, 121.4485, 'West Bund', 'amap', 'walking');
+  assert.ok(amapUrl && amapUrl.startsWith('https://uri.amap.com/navigation?'));
+  const appleUrl = validation.buildSafeDirectionsUrl(-37.7975, 144.9805, 'Edinburgh Gardens', 'apple', 'walking');
+  assert.ok(appleUrl && appleUrl.startsWith('https://maps.apple.com/?'));
+
+  // Care reminder date validation & renewal advance
+  assert.equal(validation.sanitizeIsoDate('2026-02-30'), null);
+  assert.equal(validation.sanitizeIsoDate('2026-12-15'), '2026-12-15');
+  assert.equal(memberDefaults.advanceReminderIsoDate('2026-12-15', 1), '2027-01-15');
+  assert.equal(memberDefaults.advanceReminderIsoDate('2026-12-15', 12), '2027-12-15');
+});
+
+test('Dog temperament quirks (hatesRain, customMaxTempC, quietMode) adjust scoring accurately', () => {
+  const drizzlyHour = {
+    isoTime: '2026-11-22T10:00:00+11:00',
+    epochMs: Date.parse('2026-11-21T23:00:00Z'),
+    tempC: 18,
+    feelsLikeC: 18,
+    precipProb: 45,
+    precipMm: 0.5,
+    weatherCode: 61,
+    windKph: 10,
+    uvIndex: 2,
+    humidity: 80,
+    cloudCover: 90,
+    solarRadiationWm2: 80,
+    isDay: true,
+    usAqi: 20,
+  };
+  const normalDog = { ...presets.DEFAULT_DOG_PROFILE, hatesRain: false };
+  const rainHater = { ...presets.DEFAULT_DOG_PROFILE, hatesRain: true };
+  assert.ok(
+    walkScoring.scoreWeatherHour(drizzlyHour, 0, rainHater).walkScore <
+      walkScoring.scoreWeatherHour(drizzlyHour, 0, normalDog).walkScore
+  );
+
+  const warmHour = { ...drizzlyHour, tempC: 23, feelsLikeC: 23, precipProb: 0, precipMm: 0, weatherCode: 1 };
+  const lowCapDog = { ...presets.DEFAULT_DOG_PROFILE, customMaxTempC: 17 };
+  const highCapDog = { ...presets.DEFAULT_DOG_PROFILE, customMaxTempC: 27 };
+  assert.ok(
+    walkScoring.scoreWeatherHour(warmHour, 0, lowCapDog).walkScore <
+      walkScoring.scoreWeatherHour(warmHour, 0, highCapDog).walkScore
+  );
 });
 
 console.log(`\nUnit Test Results: ${passed} passed, ${failed} failed.`);

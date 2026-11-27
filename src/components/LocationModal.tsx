@@ -59,6 +59,8 @@ export const LocationModal: React.FC<LocationModalProps> = ({
     isLocating,
     locationNotice,
     clearLocationNotice,
+    memberPreferences,
+    pinLocation,
   } = useWalkPlanner();
   const t = getStrings(language);
   const loc = getLocaleTag(language);
@@ -543,6 +545,43 @@ export const LocationModal: React.FC<LocationModalProps> = ({
                   : t.autoLocateNearestSuburbGps}
             </Text>
           </Pressable>
+
+          {/* Pinned Member Walk Areas (Home / Work / Weekend) */}
+          <View style={styles.pinnedStripWrap}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pinnedStripScroll}
+            >
+              {memberPreferences.pinnedLocations.map((pin) => (
+                <Pressable
+                  key={pin.id}
+                  onPress={() => handleSelectPoint(pin.location)}
+                  style={styles.pinnedChip}
+                >
+                  <UiIcon name="star" size={12} color={COLORS.brandDark} />
+                  <Text style={styles.pinnedChipText} numberOfLines={1}>
+                    {pin.label}
+                  </Text>
+                </Pressable>
+              ))}
+              {memberPreferences.pinnedLocations.length < 5 ? (
+                <Pressable
+                  onPress={() =>
+                    pinLocation(
+                      location.name.split(' · ').pop() || location.name,
+                      location
+                    )
+                  }
+                  style={styles.pinAddChip}
+                >
+                  <Text style={styles.pinAddChipText}>
+                    + {t.pinThisAreaShort}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </ScrollView>
+          </View>
 
           {/* Notice + Instant Demo GPS Pins when Browser Geolocation is Blocked / Unavailable */}
           {locationNotice ? (
@@ -1504,6 +1543,47 @@ const styles = StyleSheet.create({
     paddingStart: 18,
   },
   presetRegionActive: {
+    color: COLORS.brandDark,
+  },
+  pinnedStripWrap: {
+    marginTop: 2,
+  },
+  pinnedStripScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pinnedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.brandLight,
+    borderWidth: 1,
+    borderColor: COLORS.brand,
+    borderRadius: 999,
+    paddingVertical: 5.5,
+    paddingHorizontal: 10,
+  },
+  pinnedChipText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+    maxWidth: 130,
+  },
+  pinAddChip: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: COLORS.brand,
+    borderRadius: 999,
+    paddingVertical: 5.5,
+    paddingHorizontal: 10,
+  },
+  pinAddChipText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11.5,
+    fontWeight: '800',
     color: COLORS.brandDark,
   },
   pressed: {

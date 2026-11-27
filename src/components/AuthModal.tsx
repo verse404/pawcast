@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWalkPlanner } from '../context/WalkPlannerContext';
 import { getAuthErrorMessage, getStrings } from '../i18n/translations';
 import { COLORS, ELEVATION, UI_FONT_FAMILY } from '../theme/colors';
+import { pickDogProfilePhoto } from '../utils/dogPhotoPicker';
 import { validateEmail, validateStrongPassword } from '../utils/validation';
 import { UiIcon } from './UiIcons';
 
@@ -28,7 +30,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'signin',
   onClose,
 }) => {
-  const { language } = useWalkPlanner();
+  const { language, memberProfile, updateMemberProfile } = useWalkPlanner();
   const {
     isFirebaseConfigured,
     signIn,
@@ -39,6 +41,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const t = getStrings(language);
 
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
+  const [displayName, setDisplayName] = useState(memberProfile.displayName);
+  const [avatarDraft, setAvatarDraft] = useState<string | null>(
+    memberProfile.avatarUri ?? null
+  );
+  const [isPickingAvatar, setIsPickingAvatar] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -49,6 +56,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   useEffect(() => {
     if (visible) {
       setMode(initialMode);
+      setDisplayName(memberProfile.displayName);
+      setAvatarDraft(memberProfile.avatarUri ?? null);
       setPassword('');
       setShowPassword(false);
       setErrorText(null);
@@ -59,7 +68,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorText(null);
       setInfoText(null);
     }
-  }, [visible, initialMode]);
+  }, [visible, initialMode, memberProfile.displayName, memberProfile.avatarUri]);
+
+  const handlePickUserPhoto = async () => {
+    if (isPickingAvatar) return;
+    setIsPickingAvatar(true);
+    setErrorText(null);
+    try {
+      const res = await pickDogProfilePhoto('library');
+      if (res.status === 'picked') {
+        setAvatarDraft(res.dataUri);
+      } else if (res.status === 'error') {
+        setErrorText(res.message);
+      }
+    } finally {
+      setIsPickingAvatar(false);
+    }
+  };
 
   const switchMode = (nextMode: AuthModalMode) => {
     setMode(nextMode);
@@ -136,8 +161,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
       setSubmitting(true);
       try {
-        const res = await signUp(emailCheck.normalized, password);
+        const res = await signUp(emailCheck.normalized, password, displayName);
         if (res.ok) {
+          if (displayName.trim() || avatarDraft !== (memberProfile.avatarUri ?? null)) {
+            updateMemberProfile({
+              displayName: displayName.trim(),
+              avatarUri: avatarDraft,
+            });
+          }
           setPassword('');
           onClose();
         } else {
@@ -305,6 +336,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <Text style={styles.dangerWarningText}>
                       {t.authDeleteWarning}
                     </Text>
+                  </View>
+                ) : null}
+
+                {mode === 'signup' ? (
+                  <View style={styles.signupProfileRow}>
+                    <Pressable
+                      onPress={handlePickUserPhoto}
+                      disabled={isPickingAvatar || submitting}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.memberUploadAvatar}
+                      style={({ pressed }) => [
+                        styles.signupAvatarBtn,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      {avatarDraft ? (
+                        <Image
+                          source={{ uri: avatarDraft }}
+                          style={styles.signupAvatarImg}
+                        />
+                      ) : (
+                        <UiIcon name="camera" size={20} color={COLORS.brandDark} />
+                      )}
+                    </Pressable>
+                    <View style={styles.signupNameCol}>
+                      <Text style={styles.fieldLabel}>
+                        {t.authDisplayNameLabel}
+                      </Text>
+                      <View style={styles.inputBox}>
+                        <TextInput
+                          value={displayName}
+                          onChangeText={setDisplayName}
+                          placeholder={t.authDisplayNamePlaceholder}
+                          placeholderTextColor={COLORS.textMuted}
+                          maxLength={40}
+                          editable={!submitting}
+                          style={styles.input}
+                        />
+                      </View>
+                    </View>
                   </View>
                 ) : null}
 
@@ -634,6 +705,31 @@ const styles = StyleSheet.create({
     color: COLORS.avoidText,
   },
   fieldGroup: {
+    gap: 6,
+  },
+  signupProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  signupAvatarBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: COLORS.brandLight,
+    borderWidth: 1.5,
+    borderColor: COLORS.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  signupAvatarImg: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  signupNameCol: {
+    flex: 1,
     gap: 6,
   },
   fieldLabel: {

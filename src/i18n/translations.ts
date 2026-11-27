@@ -294,6 +294,128 @@ export interface AppStrings {
   authErrRequiresRecentLogin: string;
   authErrNetwork: string;
   authErrGeneric: string;
+
+  // Member Profile, Tier 1 & Tier 2 Preferences
+  authDisplayNameLabel: string;
+  authDisplayNamePlaceholder: string;
+  accountOpenHubBtn: string;
+  accountGuestName: string;
+  memberHubTitle: string;
+  memberTabProfile: string;
+  memberTabSpots: string;
+  memberTabCare: string;
+  memberTabHousehold: string;
+  memberDisplayNameLabel: string;
+  memberDisplayNamePlaceholder: string;
+  memberUploadAvatar: string;
+  memberChangeAvatar: string;
+  memberClearAvatar: string;
+  memberPinnedAreasTitle: string;
+  memberPinCurrentBtn: string;
+  memberPinLabelPlaceholder: string;
+  memberNoPinnedAreas: string;
+  memberRoutineTitle: string;
+  memberMorningHourLabel: string;
+  memberEveningHourLabel: string;
+  memberOffLabel: string;
+  memberDefaultLoopLabel: string;
+  memberPreferredMapsLabel: string;
+  mapsAppAuto: string;
+  mapsAppApple: string;
+  mapsAppGoogle: string;
+  mapsAppAmap: string;
+  memberDefaultFiltersLabel: string;
+  saveFiltersAsDefaultBtn: string;
+  savedDefaultFiltersToast: string;
+  memberInviteSignatureLabel: string;
+  memberInviteSignaturePlaceholder: string;
+  memberWeeklyGoalsLabel: string;
+  memberGoalWalksUnit: string;
+  memberGoalDistUnitMetric: string;
+  memberGoalDistUnitImperial: string;
+  memberSecretSpotsTitle: string;
+  memberSecretSpotsSub: string;
+  memberSpotNamePlaceholder: string;
+  memberSpotNotePlaceholder: string;
+  memberAddSpotAtCurrentBtn: string;
+  memberEmptySpots: string;
+  memberSpotCatPark: string;
+  memberSpotCatDogPark: string;
+  memberSpotCatTrail: string;
+  memberSpotCatBeach: string;
+  memberSpotTagShade: string;
+  memberSpotTagWater: string;
+  memberSpotTagFenced: string;
+  memberSpotTagQuiet: string;
+  memberRemindersTitle: string;
+  memberRemindersSub: string;
+  memberReminderTitlePlaceholder: string;
+  memberReminderDatePlaceholder: string;
+  memberReminderAddBtn: string;
+  memberReminderTypeRego: string;
+  memberReminderTypeRabies: string;
+  memberReminderTypeFlea: string;
+  memberReminderTypeGrooming: string;
+  memberReminderTypeCustom: string;
+  memberReminderRepeatOnce: string;
+  memberReminderRepeatMonthly: string;
+  memberReminderRepeatQuarterly: string;
+  memberReminderRepeatYearly: string;
+  memberReminderOverdue: string;
+  memberReminderDueToday: string;
+  memberReminderDueInDays: (days: string) => string;
+  memberReminderRenewDone: string;
+  memberEmptyReminders: string;
+  memberGearTitle: string;
+  memberGearSub: string;
+  memberGearAddPlaceholder: string;
+  memberGearAddBtn: string;
+  gearTriggerAlways: string;
+  gearTriggerHotPaws: string;
+  gearTriggerRain: string;
+  gearTriggerNight: string;
+  gearTriggerLicense: string;
+  packForWalkTitle: string;
+  memberHouseholdTitle: string;
+  memberHouseholdSub: string;
+  memberHouseholdSignInNeeded: string;
+  memberHouseholdCreateBtn: string;
+  memberHouseholdJoinLabel: string;
+  memberHouseholdJoinPlaceholder: string;
+  memberHouseholdJoinBtn: string;
+  memberHouseholdMembersLabel: string;
+  memberHouseholdOwnerTag: string;
+  memberHouseholdInviteCodeLabel: string;
+  memberHouseholdCopyCode: string;
+  memberHouseholdCopiedCode: string;
+  memberHouseholdNewCode: string;
+  memberHouseholdSyncBtn: string;
+  memberHouseholdLeaveBtn: string;
+  memberHouseholdDisbandBtn: string;
+  memberHouseholdJoinFailed: string;
+  memberHouseholdActionFailed: string;
+  dogQuirksSectionLabel: string;
+  dogQuietModeTitle: string;
+  dogQuietModeSub: string;
+  dogHatesRainTitle: string;
+  dogHatesRainSub: string;
+  dogLovesWaterTitle: string;
+  dogLovesWaterSub: string;
+  dogCustomMaxTempLabel: string;
+  dogCustomMaxTempAuto: string;
+  walkGoalProgressLabel: (done: string, target: string) => string;
+  walkTagHydrated: string;
+  walkTagRecall: string;
+  walkTagPotty: string;
+  walkTagPaws: string;
+  walkTagHot: string;
+  walkTagSocial: string;
+  walkExportCsvBtn: string;
+  walkExportJsonBtn: string;
+  walkExportedToast: string;
+  walkLoggedByPrefix: string;
+  pinnedAreasHeader: string;
+  pinThisAreaShort: string;
 }
 
 const EN_STRINGS: AppStrings = {
@@ -589,6 +711,141 @@ const EN_STRINGS: AppStrings = {
     'Network request failed. Check your connection and try again.',
   authErrGeneric:
     'Unable to complete this request right now. Please try again.',
+
+  authDisplayNameLabel: 'Your Name (Optional)',
+  authDisplayNamePlaceholder: 'e.g. Sarah',
+  accountOpenHubBtn: 'Member Hub & Preferences',
+  accountGuestName: 'Guest Walker',
+  memberHubTitle: 'Member Hub',
+  memberTabProfile: 'Profile',
+  memberTabSpots: 'My Spots',
+  memberTabCare: 'Care & Gear',
+  memberTabHousehold: 'Co-Walkers',
+  memberDisplayNameLabel: 'Your Display Name',
+  memberDisplayNamePlaceholder: 'Your name for walks & invites',
+  memberUploadAvatar: 'Upload Photo',
+  memberChangeAvatar: 'Change Photo',
+  memberClearAvatar: 'Remove',
+  memberPinnedAreasTitle: 'Pinned Walk Areas (Up to 5)',
+  memberPinCurrentBtn: '+ Pin Current Area',
+  memberPinLabelPlaceholder: 'Label (Home, Work, Weekend…)',
+  memberNoPinnedAreas:
+    'Pin your Home, Work, or Weekend suburbs for 1-tap switching.',
+  memberRoutineTitle: 'Usual Walk Routine',
+  memberMorningHourLabel: 'Morning Walk',
+  memberEveningHourLabel: 'Evening Walk',
+  memberOffLabel: 'Off',
+  memberDefaultLoopLabel: 'Default Doorstep Loop',
+  memberPreferredMapsLabel: 'Preferred Navigation App',
+  mapsAppAuto: 'Auto',
+  mapsAppApple: 'Apple Maps',
+  mapsAppGoogle: 'Google Maps',
+  mapsAppAmap: 'AMap (高德)',
+  memberDefaultFiltersLabel: 'Default Map Filters',
+  saveFiltersAsDefaultBtn: 'Save as Default',
+  savedDefaultFiltersToast: 'Saved as default ✓',
+  memberInviteSignatureLabel: 'WeChat / Meet-Up Signature',
+  memberInviteSignaturePlaceholder:
+    'e.g. Pudding & I will meet by the water fountain!',
+  memberWeeklyGoalsLabel: 'Weekly Walk Goals',
+  memberGoalWalksUnit: 'walks/wk',
+  memberGoalDistUnitMetric: 'km/wk',
+  memberGoalDistUnitImperial: 'mi/wk',
+  memberSecretSpotsTitle: 'My Secret Spots',
+  memberSecretSpotsSub:
+    'Pin unlisted pocket parks, water-bowl cafés, or shaded trails near your active area.',
+  memberSpotNamePlaceholder: 'Spot name (e.g. Oak St Pocket Park)',
+  memberSpotNotePlaceholder: 'Tip or gate note (water bowl, quiet corner…)',
+  memberAddSpotAtCurrentBtn: '+ Save at Current Area',
+  memberEmptySpots:
+    'No personal spots yet — add your favorite neighborhood hidden gem above.',
+  memberSpotCatPark: 'Park',
+  memberSpotCatDogPark: 'Dog Run',
+  memberSpotCatTrail: 'Trail',
+  memberSpotCatBeach: 'Beach',
+  memberSpotTagShade: 'Shaded',
+  memberSpotTagWater: 'Water Bowl',
+  memberSpotTagFenced: 'Fenced',
+  memberSpotTagQuiet: 'Quiet',
+  memberRemindersTitle: 'Care & Renewal Reminders',
+  memberRemindersSub:
+    'Lightweight dates only — track Council Rego, Shanghai 狗证, rabies, or flea/tick cycles.',
+  memberReminderTitlePlaceholder: 'Title (e.g. Council Rego / Flea & Tick)',
+  memberReminderDatePlaceholder: 'YYYY-MM-DD',
+  memberReminderAddBtn: '+ Add Reminder',
+  memberReminderTypeRego: 'Rego / 狗证',
+  memberReminderTypeRabies: 'Rabies',
+  memberReminderTypeFlea: 'Flea & Tick',
+  memberReminderTypeGrooming: 'Grooming',
+  memberReminderTypeCustom: 'Other',
+  memberReminderRepeatOnce: 'One-time',
+  memberReminderRepeatMonthly: 'Monthly',
+  memberReminderRepeatQuarterly: '3 Months',
+  memberReminderRepeatYearly: 'Yearly',
+  memberReminderOverdue: 'Overdue',
+  memberReminderDueToday: 'Due Today',
+  memberReminderDueInDays: (days) => `In ${days}d`,
+  memberReminderRenewDone: 'Done ✓',
+  memberEmptyReminders:
+    'No reminders yet — add rego, vaccine, or flea/tick dates above.',
+  memberGearTitle: 'Weather-Triggered Gear Checklist',
+  memberGearSub:
+    'Matching items appear on Walk Now whenever conditions call for them.',
+  memberGearAddPlaceholder: 'Add item (e.g. Cooling vest, treats…)',
+  memberGearAddBtn: '+ Add',
+  gearTriggerAlways: 'Always',
+  gearTriggerHotPaws: 'Hot Paws',
+  gearTriggerRain: 'Rain',
+  gearTriggerNight: 'Night',
+  gearTriggerLicense: 'Rego/狗证',
+  packForWalkTitle: 'Pack for This Walk',
+  memberHouseholdTitle: 'Household & Co-Walker Sync',
+  memberHouseholdSub:
+    'Share your dogs, Walk Journal, saved parks, and care reminders with a partner or dog walker (up to 4 members).',
+  memberHouseholdSignInNeeded:
+    'Sign in with your email account first to create or join a shared household.',
+  memberHouseholdCreateBtn: 'Create Shared Household',
+  memberHouseholdJoinLabel: 'Have a partner’s invite code?',
+  memberHouseholdJoinPlaceholder: 'Paste PAW-… invite code',
+  memberHouseholdJoinBtn: 'Join Household',
+  memberHouseholdMembersLabel: 'Household Members',
+  memberHouseholdOwnerTag: 'Owner',
+  memberHouseholdInviteCodeLabel: 'Single-Use Invite Code (7-day expiry)',
+  memberHouseholdCopyCode: 'Copy Code',
+  memberHouseholdCopiedCode: 'Copied ✓',
+  memberHouseholdNewCode: 'New Code',
+  memberHouseholdSyncBtn: 'Sync Household',
+  memberHouseholdLeaveBtn: 'Leave Household',
+  memberHouseholdDisbandBtn: 'Disband Household',
+  memberHouseholdJoinFailed:
+    'Invite code was invalid, expired, or household is full.',
+  memberHouseholdActionFailed:
+    'Could not update household right now. Check connection and try again.',
+  dogQuirksSectionLabel: 'Temperament & Comfort Quirks',
+  dogQuietModeTitle: 'Quiet / Reactive Dog Mode',
+  dogQuietModeSub:
+    'Boosts calmer trails & low-crowd paths over busy dog beaches',
+  dogHatesRainTitle: 'Hates Rain & Wet Puddles',
+  dogHatesRainSub: 'Stricter rain & damp grass penalties in your walk score',
+  dogLovesWaterTitle: 'Loves Swimming & Dog Beaches',
+  dogLovesWaterSub:
+    'Boosts open dog beaches & waterfront spots on warm days',
+  dogCustomMaxTempLabel: 'Custom Comfort Ceiling',
+  dogCustomMaxTempAuto: 'Breed Auto',
+  walkGoalProgressLabel: (done, target) =>
+    `Weekly Goal: ${done}/${target} walks`,
+  walkTagHydrated: '💧 Hydrated',
+  walkTagRecall: '🐕 Good Recall',
+  walkTagPotty: '💩 Potty',
+  walkTagPaws: '🐾 Paw Check',
+  walkTagHot: '☀️ Warm',
+  walkTagSocial: '🤝 Friendly',
+  walkExportCsvBtn: 'Export CSV',
+  walkExportJsonBtn: 'JSON',
+  walkExportedToast: 'Exported ✓',
+  walkLoggedByPrefix: 'by',
+  pinnedAreasHeader: 'Pinned Areas',
+  pinThisAreaShort: 'Pin Current',
 };
 
 const ZH_STRINGS: AppStrings = {
@@ -874,6 +1131,132 @@ const ZH_STRINGS: AppStrings = {
   authErrRequiresRecentLogin: '为保障账号安全，请重新输入当前密码后再继续。',
   authErrNetwork: '网络连接失败，请检查网络后重试。',
   authErrGeneric: '暂时无法完成请求，请稍后再试。',
+
+  authDisplayNameLabel: '你的昵称（选填）',
+  authDisplayNamePlaceholder: '例如：布丁家长',
+  accountOpenHubBtn: '会员中心与个性化设置',
+  accountGuestName: '访客家长',
+  memberHubTitle: '会员中心',
+  memberTabProfile: '资料习惯',
+  memberTabSpots: '私藏地点',
+  memberTabCare: '护理装备',
+  memberTabHousehold: '家人同遛',
+  memberDisplayNameLabel: '你的显示昵称',
+  memberDisplayNamePlaceholder: '用于遛狗记录与约遛邀请',
+  memberUploadAvatar: '上传头像',
+  memberChangeAvatar: '更换头像',
+  memberClearAvatar: '移除',
+  memberPinnedAreasTitle: '常用片区快捷切换（最多 5 个）',
+  memberPinCurrentBtn: '+ 固定当前片区',
+  memberPinLabelPlaceholder: '标签（如：家、公司、周末）',
+  memberNoPinnedAreas:
+    '固定家、公司或周末常去的片区，随时一键切换当地天气和公园。',
+  memberRoutineTitle: '日常遛狗习惯',
+  memberMorningHourLabel: '早遛时段',
+  memberEveningHourLabel: '晚遛时段',
+  memberOffLabel: '关闭',
+  memberDefaultLoopLabel: '默认周边环线时长',
+  memberPreferredMapsLabel: '默认导航地图',
+  mapsAppAuto: '自动',
+  mapsAppApple: '苹果地图',
+  mapsAppGoogle: '谷歌地图',
+  mapsAppAmap: '高德地图',
+  memberDefaultFiltersLabel: '地图默认筛选条件',
+  saveFiltersAsDefaultBtn: '设为默认',
+  savedDefaultFiltersToast: '已设为默认 ✓',
+  memberInviteSignatureLabel: '微信约遛默认签名',
+  memberInviteSignaturePlaceholder: '例如：布丁和我在公园饮水点集合！',
+  memberWeeklyGoalsLabel: '每周遛狗目标',
+  memberGoalWalksUnit: '次/周',
+  memberGoalDistUnitMetric: '公里/周',
+  memberGoalDistUnitImperial: '英里/周',
+  memberSecretSpotsTitle: '我的私藏遛狗点',
+  memberSecretSpotsSub:
+    '记录地图未收录的社区小绿地、宠物友好咖啡馆或树荫小路，自动同步到地图中。',
+  memberSpotNamePlaceholder: '地点名称（如：梧桐街小草坪）',
+  memberSpotNotePlaceholder: '入口或贴士（如：有饮水盆、清静无电瓶车）',
+  memberAddSpotAtCurrentBtn: '+ 保存到当前区域',
+  memberEmptySpots: '还没有私藏地点，在上方添加你的宝藏遛狗去处吧。',
+  memberSpotCatPark: '公园',
+  memberSpotCatDogPark: '狗公园',
+  memberSpotCatTrail: '林荫路',
+  memberSpotCatBeach: '海滩',
+  memberSpotTagShade: '树荫多',
+  memberSpotTagWater: '有饮水',
+  memberSpotTagFenced: '有围栏',
+  memberSpotTagQuiet: '清静',
+  memberRemindersTitle: '护理与证件到期提醒',
+  memberRemindersSub:
+    '仅保存到期日期（不存敏感证件号），轻松管理上海狗证年审、疫苗或驱虫周期。',
+  memberReminderTitlePlaceholder: '提醒名称（如：上海狗证年审 / 每月驱虫）',
+  memberReminderDatePlaceholder: 'YYYY-MM-DD',
+  memberReminderAddBtn: '+ 添加提醒',
+  memberReminderTypeRego: '狗证/登记',
+  memberReminderTypeRabies: '狂犬疫苗',
+  memberReminderTypeFlea: '驱虫',
+  memberReminderTypeGrooming: '洗澡美容',
+  memberReminderTypeCustom: '其他',
+  memberReminderRepeatOnce: '单次',
+  memberReminderRepeatMonthly: '每月',
+  memberReminderRepeatQuarterly: '每3个月',
+  memberReminderRepeatYearly: '每年',
+  memberReminderOverdue: '已逾期',
+  memberReminderDueToday: '今天到期',
+  memberReminderDueInDays: (days) => `还有 ${days} 天`,
+  memberReminderRenewDone: '已完成 ✓',
+  memberEmptyReminders: '暂无提醒，可在上方添加狗证年审、狂犬疫苗或每月驱虫日期。',
+  memberGearTitle: '天气联动出行装备清单',
+  memberGearSub: '当天气、地面温度或时段符合条件时，会自动在“去遛狗”页提醒携带。',
+  memberGearAddPlaceholder: '添加装备（如：降温背心、训练零食…）',
+  memberGearAddBtn: '+ 添加',
+  gearTriggerAlways: '常备',
+  gearTriggerHotPaws: '防烫爪',
+  gearTriggerRain: '雨天',
+  gearTriggerNight: '夜遛',
+  gearTriggerLicense: '狗证',
+  packForWalkTitle: '本次出门建议携带',
+  memberHouseholdTitle: '家人 / 遛狗搭子共享',
+  memberHouseholdSub:
+    '与家人、伴侣或遛狗师同步狗狗资料、遛狗打卡、收藏公园和护理提醒（最多 4 人），避免重复遛或漏遛。',
+  memberHouseholdSignInNeeded:
+    '请先使用邮箱登录账号，即可创建或加入家庭共享空间。',
+  memberHouseholdCreateBtn: '创建家庭共享空间',
+  memberHouseholdJoinLabel: '已有家人的邀请码？',
+  memberHouseholdJoinPlaceholder: '粘贴 PAW-… 邀请码',
+  memberHouseholdJoinBtn: '加入共享空间',
+  memberHouseholdMembersLabel: '共享成员',
+  memberHouseholdOwnerTag: '创建者',
+  memberHouseholdInviteCodeLabel: '一次性安全邀请码（7 天有效）',
+  memberHouseholdCopyCode: '复制邀请码',
+  memberHouseholdCopiedCode: '已复制 ✓',
+  memberHouseholdNewCode: '生成新码',
+  memberHouseholdSyncBtn: '同步共享数据',
+  memberHouseholdLeaveBtn: '退出共享',
+  memberHouseholdDisbandBtn: '解散共享空间',
+  memberHouseholdJoinFailed: '邀请码无效、已过期，或共享成员已达上限。',
+  memberHouseholdActionFailed: '暂时无法更新家庭共享，请检查网络后重试。',
+  dogQuirksSectionLabel: '性格偏好与天气习惯',
+  dogQuietModeTitle: '怕生 / 偏爱清静路线',
+  dogQuietModeSub: '优先推荐清静林荫步道与人少路线，降低嘈杂狗公园排序',
+  dogHatesRainTitle: '讨厌下雨与湿草地',
+  dogHatesRainSub: '下雨或雨后草地潮湿时提高扣分，优先推荐干爽步道',
+  dogLovesWaterTitle: '爱玩水 / 喜欢狗狗海滩',
+  dogLovesWaterSub: '暖和天气时优先推荐开放的狗狗海滩和滨水路线',
+  dogCustomMaxTempLabel: '自定义最高舒适气温',
+  dogCustomMaxTempAuto: '按品种自动',
+  walkGoalProgressLabel: (done, target) => `本周目标：${done}/${target} 次遛狗`,
+  walkTagHydrated: '💧 喝足水',
+  walkTagRecall: '🐕 唤回很棒',
+  walkTagPotty: '💩 已便便',
+  walkTagPaws: '🐾 爪子良好',
+  walkTagHot: '☀️ 偏热',
+  walkTagSocial: '🤝 社交开心',
+  walkExportCsvBtn: '导出 CSV',
+  walkExportJsonBtn: 'JSON',
+  walkExportedToast: '已导出 ✓',
+  walkLoggedByPrefix: '记录人',
+  pinnedAreasHeader: '常用片区',
+  pinThisAreaShort: '固定当前',
 };
 
 const ZH_BREED_LABELS: Record<string, string> = {

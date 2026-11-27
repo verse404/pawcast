@@ -9,9 +9,14 @@
  *   calling third-party endpoints directly from the client.
  */
 
+import { PreferredMapsApp } from '../types/walk';
 import { wgs84ToGcj02 } from './chinaCoords';
 
-const ALLOWED_MAP_HOSTS = new Set(['maps.apple.com', 'www.google.com']);
+const ALLOWED_MAP_HOSTS = new Set([
+  'maps.apple.com',
+  'www.google.com',
+  'uri.amap.com',
+]);
 
 /** Maximum allowed size for raw uploaded dog portrait files (5 MB). */
 export const MAX_AVATAR_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -295,28 +300,109 @@ export function mapFirebaseAuthErrorCode(rawCode: unknown): AuthErrorKey {
 }
 
 /**
- * Builds an allow-listed HTTPS map directions URL for Apple Maps or Google Maps.
+ * Validates a strict `YYYY-MM-DD` calendar date string for lightweight reminders.
+ */
+export function sanitizeIsoDate(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (year < 2020 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() + 1 !== month ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return trimmed;
+}
+
+/**
+ * Generates a cryptographically secure random hex token (default 192 bits / 48 hex chars)
+ * for high-entropy household sharing invites (never uses Math.random).
+ */
+export function generateSecureInviteToken(byteCount = 24): string {
+  const bytes = new Uint8Array(Math.max(16, Math.min(32, byteCount)));
+  const cryptoObj = (globalThis as {
+    crypto?: { getRandomValues?: (arr: Uint8Array) => Uint8Array };
+  }).crypto;
+  if (!cryptoObj?.getRandomValues) {
+    throw new Error('Secure cryptographic randomness is unavailable');
+  }
+  cryptoObj.getRandomValues(bytes);
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `PAW-${hex}`;
+}
+
+/**
+ * Validates format of a household invite token before performing a Firestore lookup.
+ */
+export function sanitizeInviteToken(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const clean = raw.trim();
+  if (!/^PAW-[a-f0-9]{32,64}$/i.test(clean)) {
+    return null;
+  }
+  return `PAW-${clean.slice(4).toLowerCase()}`;
+}
+
+/**
+ * Neutralizes CSV formula injection (`=`, `+`, `-`, `@`, tab, CR) and quotes safely.
+ */
+export function escapeCsvCell(raw: unknown): string {
+  const text = String(raw ?? '').replace(/\r?\n/g, ' ');
+  const neutralized = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  if (/[",]/.test(neutralized)) {
+    return `"${neutralized.replace(/"/g, '""')}"`;
+  }
+  return neutralized;
+}
+
+/**
+ * Builds an allow-listed HTTPS map directions URL for Apple Maps, Google Maps, or AMap (高德地图).
  * Returns null if coordinates are invalid or host verification fails.
  */
 export function buildSafeDirectionsUrl(
   latitude: number,
   longitude: number,
   placeName: string,
-  preferAppleMaps: boolean,
-  travelMode: 'walking' | 'driving' = 'walking'
+  preferAppleMapsOrApp: boolean | PreferredMapsApp,
+  travelMode: 'walking' | 'driving' = 'walking',
+  isIosDevice = false
 ): string | null {
   if (!isValidCoordinate(latitude, longitude)) {
     return null;
   }
   const safeName = sanitizeText(placeName, 80) || 'Dog Walk Spot';
-  // Convert WGS-84 to GCJ-02 for Mainland China street map alignment in Apple/Google CN maps
+  // Convert WGS-84 to GCJ-02 for Mainland China street map alignment in Apple/Google/AMap CN maps
   const mapped = wgs84ToGcj02(latitude, longitude);
   const coords = `${mapped.latitude.toFixed(6)},${mapped.longitude.toFixed(6)}`;
   const appleFlag = travelMode === 'driving' ? 'd' : 'w';
 
-  const rawUrl = preferAppleMaps
-    ? `https://maps.apple.com/?daddr=${encodeURIComponent(coords)}&dirflg=${appleFlag}&q=${encodeURIComponent(safeName)}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coords)}&travelmode=${travelMode}`;
+  const resolvedApp: 'apple' | 'google' | 'amap' =
+    typeof preferAppleMapsOrApp === 'boolean'
+      ? preferAppleMapsOrApp
+        ? 'apple'
+        : 'google'
+      : preferAppleMapsOrApp === 'auto'
+        ? isIosDevice
+          ? 'apple'
+          : 'google'
+        : preferAppleMapsOrApp;
+
+  const rawUrl =
+    resolvedApp === 'amap'
+      ? `https://uri.amap.com/navigation?to=${encodeURIComponent(`${mapped.longitude.toFixed(6)},${mapped.latitude.toFixed(6)},${safeName}`)}&mode=${travelMode === 'driving' ? 'car' : 'walk'}&coordinate=gaode`
+      : resolvedApp === 'apple'
+        ? `https://maps.apple.com/?daddr=${encodeURIComponent(coords)}&dirflg=${appleFlag}&q=${encodeURIComponent(safeName)}`
+        : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coords)}&travelmode=${travelMode}`;
 
   try {
     const parsed = new URL(rawUrl);
@@ -335,7 +421,8 @@ export function buildSafeDirectionsUrl(
  */
 export function buildSafeLoopUrl(
   coordinates: Array<[number, number]>,
-  preferAppleMaps: boolean
+  preferAppleMapsOrApp: boolean | PreferredMapsApp,
+  isIosDevice = false
 ): string | null {
   if (coordinates.length < 3) {
     return null;
@@ -351,11 +438,25 @@ export function buildSafeLoopUrl(
   const midA = mappedPts[Math.floor(mappedPts.length * 0.33)];
   const midB = mappedPts[Math.floor(mappedPts.length * 0.66)];
 
+  const resolvedApp: 'apple' | 'google' | 'amap' =
+    typeof preferAppleMapsOrApp === 'boolean'
+      ? preferAppleMapsOrApp
+        ? 'apple'
+        : 'google'
+      : preferAppleMapsOrApp === 'auto'
+        ? isIosDevice
+          ? 'apple'
+          : 'google'
+        : preferAppleMapsOrApp;
+
   // Google Maps supports explicit walking waypoints `origin` -> `waypoints` -> `destination=origin`
   const waypoints = `${midA.latitude.toFixed(6)},${midA.longitude.toFixed(6)}|${midB.latitude.toFixed(6)},${midB.longitude.toFixed(6)}`;
-  const rawUrl = preferAppleMaps
-    ? `https://maps.apple.com/?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(`${midA.latitude.toFixed(6)},${midA.longitude.toFixed(6)}`)}&dirflg=w`
-    : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(origin)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=walking`;
+  const rawUrl =
+    resolvedApp === 'amap'
+      ? `https://uri.amap.com/navigation?from=${encodeURIComponent(`${mappedPts[0].longitude.toFixed(6)},${mappedPts[0].latitude.toFixed(6)},Start`)}&to=${encodeURIComponent(`${midA.longitude.toFixed(6)},${midA.latitude.toFixed(6)},Loop`)}&mode=walk&coordinate=gaode`
+      : resolvedApp === 'apple'
+        ? `https://maps.apple.com/?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(`${midA.latitude.toFixed(6)},${midA.longitude.toFixed(6)}`)}&dirflg=w`
+        : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(origin)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=walking`;
 
   try {
     const parsed = new URL(rawUrl);

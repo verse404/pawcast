@@ -12,17 +12,27 @@ import {
   AuthActionResult,
   AuthUserSummary,
   CloudSyncPayload,
+  createHouseholdInviteToken,
+  createHouseholdShare,
   deleteCurrentAccount,
+  HouseholdSharedState,
+  joinHouseholdWithToken,
+  leaveHouseholdShare,
   loadCloudUserState,
+  loadHouseholdShare,
   requestPasswordReset,
   resendVerificationEmail,
+  revokeHouseholdInviteToken,
   saveCloudUserState,
+  saveHouseholdShare,
   signInWithEmail,
   signOutCurrentUser,
   signUpWithEmail,
   subscribeToAuthState,
+  updateCurrentAuthDisplayName,
 } from '../services/authService';
 import { isFirebaseConfigured } from '../services/firebaseClient';
+import { HouseholdSummary } from '../types/walk';
 
 export type CloudSyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -32,14 +42,37 @@ interface AuthContextValue {
   isFirebaseConfigured: boolean;
   syncStatus: CloudSyncStatus;
   lastSyncedAtMs: number | null;
+  household: HouseholdSummary | null;
   signIn: (email: string, password: string) => Promise<AuthActionResult>;
-  signUp: (email: string, password: string) => Promise<AuthActionResult>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName?: string
+  ) => Promise<AuthActionResult>;
   resetPassword: (email: string) => Promise<AuthActionResult>;
   resendVerification: () => Promise<AuthActionResult>;
+  updateAuthDisplayName: (displayName: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   deleteAccount: (currentPassword: string) => Promise<AuthActionResult>;
   pullCloudProfile: () => Promise<Record<string, unknown> | null>;
   pushCloudProfile: (payload: CloudSyncPayload) => Promise<boolean>;
+  createHousehold: (
+    displayName: string,
+    initial: HouseholdSharedState
+  ) => Promise<{ ok: boolean; householdId?: string; inviteToken?: string }>;
+  regenerateHouseholdInvite: (displayName: string) => Promise<string | null>;
+  revokeHouseholdInvite: (token: string) => Promise<void>;
+  joinHousehold: (
+    displayName: string,
+    token: string
+  ) => Promise<{ ok: boolean; householdId?: string; rawData?: Record<string, unknown> }>;
+  pullHousehold: (householdId: string) => Promise<Record<string, unknown> | null>;
+  pushHousehold: (
+    householdId: string,
+    displayName: string,
+    data: HouseholdSharedState
+  ) => Promise<boolean>;
+  leaveHousehold: (householdId: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -57,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isInitializing, setIsInitializing] = useState(isFirebaseConfigured);
   const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>('idle');
   const [lastSyncedAtMs, setLastSyncedAtMs] = useState<number | null>(null);
+  const [household, setHousehold] = useState<HouseholdSummary | null>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -69,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!nextUser) {
         setSyncStatus('idle');
         setLastSyncedAtMs(null);
+        setHousehold(null);
       }
     });
     return unsub;
@@ -78,9 +113,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return signInWithEmail(email, password);
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    return signUpWithEmail(email, password);
-  }, []);
+  const signUp = useCallback(
+    async (email: string, password: string, displayName?: string) => {
+      return signUpWithEmail(email, password, displayName);
+    },
+    []
+  );
 
   const resetPassword = useCallback(async (email: string) => {
     return requestPasswordReset(email);
@@ -90,11 +128,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return resendVerificationEmail();
   }, []);
 
+  const updateAuthDisplayName = useCallback(async (displayName: string) => {
+    const ok = await updateCurrentAuthDisplayName(displayName);
+    if (ok) {
+      setUser((prev) => (prev ? { ...prev, displayName } : prev));
+    }
+    return ok;
+  }, []);
+
   const signOut = useCallback(async () => {
     await signOutCurrentUser();
     setUser(null);
     setSyncStatus('idle');
     setLastSyncedAtMs(null);
+    setHousehold(null);
     // Clear transient browser memory state cleanly on logout
     triggerCleanWebReload();
   }, []);
@@ -106,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setSyncStatus('idle');
       setLastSyncedAtMs(null);
+      setHousehold(null);
       triggerCleanWebReload();
     }
     return res;
@@ -140,6 +188,100 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [user?.uid]
   );
 
+  const createHousehold = useCallback(
+    async (displayName: string, initial: HouseholdSharedState) => {
+      if (!user?.uid) return { ok: false };
+      const res = await createHouseholdShare(user.uid, displayName, initial);
+      if (res.ok && res.household) {
+        setHousehold(res.household);
+        return {
+          ok: true,
+          householdId: res.household.id,
+          inviteToken: res.inviteToken,
+        };
+      }
+      return { ok: false };
+    },
+    [user?.uid]
+  );
+
+  const regenerateHouseholdInvite = useCallback(
+    async (displayName: string) => {
+      if (!user?.uid || !household?.id) return null;
+      const token = await createHouseholdInviteToken(
+        household.id,
+        user.uid,
+        displayName
+      );
+      if (token) {
+        setHousehold((prev) =>
+          prev ? { ...prev, activeInviteToken: token } : prev
+        );
+      }
+      return token;
+    },
+    [user?.uid, household?.id]
+  );
+
+  const revokeHouseholdInvite = useCallback(async (token: string) => {
+    await revokeHouseholdInviteToken(token);
+    setHousehold((prev) =>
+      prev ? { ...prev, activeInviteToken: null } : prev
+    );
+  }, []);
+
+  const joinHousehold = useCallback(
+    async (displayName: string, token: string) => {
+      if (!user?.uid) return { ok: false };
+      const res = await joinHouseholdWithToken(user.uid, displayName, token);
+      if (res.ok && res.household) {
+        setHousehold(res.household);
+        return {
+          ok: true,
+          householdId: res.household.id,
+          rawData: res.rawData,
+        };
+      }
+      return { ok: false };
+    },
+    [user?.uid]
+  );
+
+  const pullHousehold = useCallback(async (householdId: string) => {
+    const loaded = await loadHouseholdShare(householdId);
+    if (!loaded) return null;
+    setHousehold((prev) => ({
+      ...loaded.summary,
+      activeInviteToken: prev?.activeInviteToken ?? null,
+    }));
+    return loaded.rawData;
+  }, []);
+
+  const pushHousehold = useCallback(
+    async (
+      householdId: string,
+      displayName: string,
+      data: HouseholdSharedState
+    ) => {
+      if (!user?.uid) return false;
+      return saveHouseholdShare(householdId, user.uid, displayName, data);
+    },
+    [user?.uid]
+  );
+
+  const leaveHousehold = useCallback(
+    async (householdId: string) => {
+      if (!user?.uid) return false;
+      const isOwner = household?.ownerUid === user.uid;
+      const ok = await leaveHouseholdShare(householdId, user.uid, isOwner);
+      if (ok) {
+        setHousehold(null);
+      }
+      return ok;
+    },
+    [user?.uid, household?.ownerUid]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -147,28 +289,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isFirebaseConfigured,
       syncStatus,
       lastSyncedAtMs,
+      household,
       signIn,
       signUp,
       resetPassword,
       resendVerification,
+      updateAuthDisplayName,
       signOut,
       deleteAccount,
       pullCloudProfile,
       pushCloudProfile,
+      createHousehold,
+      regenerateHouseholdInvite,
+      revokeHouseholdInvite,
+      joinHousehold,
+      pullHousehold,
+      pushHousehold,
+      leaveHousehold,
     }),
     [
       user,
       isInitializing,
       syncStatus,
       lastSyncedAtMs,
+      household,
       signIn,
       signUp,
       resetPassword,
       resendVerification,
+      updateAuthDisplayName,
       signOut,
       deleteAccount,
       pullCloudProfile,
       pushCloudProfile,
+      createHousehold,
+      regenerateHouseholdInvite,
+      revokeHouseholdInvite,
+      joinHousehold,
+      pullHousehold,
+      pushHousehold,
+      leaveHousehold,
     ]
   );
 

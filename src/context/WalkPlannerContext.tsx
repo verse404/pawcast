@@ -12,6 +12,24 @@ import React, {
 import { Platform } from 'react-native';
 import { findNearestAuSuburbs } from '../constants/auSuburbs';
 import {
+  advanceReminderIsoDate,
+  customSpotToWalkPlace,
+  DEFAULT_MEMBER_PREFERENCES,
+  DEFAULT_MEMBER_PROFILE,
+  getDefaultGearChecklist,
+  MAX_CARE_REMINDERS,
+  MAX_CUSTOM_SPOTS,
+  MAX_GEAR_ITEMS,
+  MAX_PINNED_LOCATIONS,
+  parseCareReminders,
+  parseCustomWalkSpots,
+  parseDefaultMapFilters,
+  parseGearChecklist,
+  parseMemberPreferences,
+  parseMemberProfile,
+  WALK_LOG_TAG_KEYS,
+} from '../constants/memberDefaults';
+import {
   BREED_PRESETS,
   DEFAULT_DOG_PROFILE,
   PRESET_LOCATIONS,
@@ -31,15 +49,25 @@ import {
 import { fetchWalkForecast } from '../services/weatherService';
 import {
   AppLanguage,
+  CareReminder,
+  CareReminderType,
+  CustomWalkSpot,
+  DefaultMapFilters,
   DogProfile,
   ForecastBundle,
+  GearChecklistItem,
+  GearTrigger,
   HourlyWeatherPoint,
   LocationPoint,
+  MemberPreferences,
+  MemberProfile,
+  PlaceCategory,
   ScoredHour,
   ScoredPlace,
   ScoreVizMode,
   UnitSystem,
   WalkLogEntry,
+  WalkLogTag,
   WalkPlace,
   WalkWindow,
 } from '../types/walk';
@@ -51,6 +79,7 @@ import {
   isValidCoordinate,
   sanitizeAvatarDataUri,
   sanitizeDogName,
+  sanitizeIsoDate,
   sanitizeText,
 } from '../utils/validation';
 import { useAuth } from './AuthContext';
@@ -125,8 +154,52 @@ interface WalkPlannerContextValue {
     cityLabel: string;
     durationMin: number;
     distanceKm: number;
+    tags?: WalkLogTag[];
+    note?: string;
   }) => void;
   deleteWalkLog: (logId: string) => void;
+
+  memberProfile: MemberProfile;
+  updateMemberProfile: (patch: Partial<MemberProfile>) => void;
+
+  memberPreferences: MemberPreferences;
+  updateMemberPreferences: (patch: Partial<MemberPreferences>) => void;
+  pinLocation: (label: string, targetLoc?: LocationPoint) => void;
+  unpinLocation: (pinId: string) => void;
+  saveDefaultMapFilters: (filters: DefaultMapFilters) => void;
+
+  customSpots: CustomWalkSpot[];
+  addCustomSpot: (spot: {
+    name: string;
+    category: PlaceCategory;
+    latitude?: number;
+    longitude?: number;
+    suburbLabel?: string;
+    note?: string;
+    tags?: string[];
+  }) => boolean;
+  removeCustomSpot: (spotId: string) => void;
+
+  careReminders: CareReminder[];
+  addCareReminder: (reminder: {
+    dogName?: string;
+    type: CareReminderType;
+    title: string;
+    dueDateIso: string;
+    repeatMonths: CareReminder['repeatMonths'];
+  }) => boolean;
+  removeCareReminder: (reminderId: string) => void;
+  completeCareReminder: (reminderId: string) => void;
+
+  gearChecklist: GearChecklistItem[];
+  toggleGearItem: (itemId: string) => void;
+  addGearItem: (label: string, trigger: GearTrigger) => boolean;
+  removeGearItem: (itemId: string) => void;
+
+  householdId: string | null;
+  startHouseholdShare: () => Promise<{ ok: boolean; inviteToken?: string }>;
+  joinHouseholdByCode: (token: string) => Promise<boolean>;
+  leaveCurrentHousehold: () => Promise<boolean>;
 
   pendingDeepLinkSpotId: string | null;
   clearPendingDeepLinkSpot: () => void;
@@ -162,6 +235,16 @@ function parseStoredDog(raw: unknown, fallbackId = 'dog-primary'): DogProfile {
   const coats = ['short', 'medium', 'thick'] as const;
   const paws = ['tough', 'normal', 'sensitive'] as const;
 
+  const rawCustomCap = Number(obj.customMaxTempC);
+  const customMaxTempC =
+    obj.customMaxTempC !== null &&
+    obj.customMaxTempC !== undefined &&
+    Number.isFinite(rawCustomCap) &&
+    rawCustomCap >= 15 &&
+    rawCustomCap <= 30
+      ? Math.round(rawCustomCap)
+      : null;
+
   return {
     id: sanitizeText(obj.id, 32) || fallbackId,
     name: sanitizeDogName(obj.name) || DEFAULT_DOG_PROFILE.name,
@@ -182,6 +265,10 @@ function parseStoredDog(raw: unknown, fallbackId = 'dog-primary'): DogProfile {
     hasDogLicense:
       obj.hasDogLicense === undefined ? true : Boolean(obj.hasDogLicense),
     customPhotoUri: sanitizeAvatarDataUri(obj.customPhotoUri),
+    quietMode: Boolean(obj.quietMode),
+    hatesRain: Boolean(obj.hatesRain),
+    lovesWater: Boolean(obj.lovesWater),
+    customMaxTempC,
   };
 }
 
@@ -215,6 +302,16 @@ function parseStoredWalkLogs(raw: unknown): WalkLogEntry[] {
           .filter(Boolean)
           .slice(0, MAX_HOUSEHOLD_DOGS)
       : [DEFAULT_DOG_PROFILE.name];
+    const validTags = Array.isArray(rec.tags)
+      ? rec.tags
+          .filter(
+            (x): x is WalkLogTag =>
+              typeof x === 'string' && WALK_LOG_TAG_KEYS.includes(x as WalkLogTag)
+          )
+          .slice(0, 6)
+      : undefined;
+    const note = sanitizeText(rec.note, 100) || undefined;
+    const loggedBy = sanitizeText(rec.loggedBy, 40) || undefined;
     clean.push({
       id,
       timestampMs: Math.round(ts),
@@ -224,6 +321,9 @@ function parseStoredWalkLogs(raw: unknown): WalkLogEntry[] {
       durationMin: Math.max(5, Math.min(180, Math.round(durationMin))),
       distanceKm: Math.max(0.2, Math.min(30, Math.round(distanceKm * 10) / 10)),
       dogNames: dogNames.length > 0 ? dogNames : [DEFAULT_DOG_PROFILE.name],
+      ...(validTags && validTags.length > 0 ? { tags: validTags } : {}),
+      ...(note ? { note } : {}),
+      ...(loggedBy ? { loggedBy } : {}),
     });
   }
   return clean.sort((a, b) => b.timestampMs - a.timestampMs);
@@ -388,11 +488,33 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     DEFAULT_DOG_PROFILE.id || 'dog-primary',
   ]);
   const [walkLogs, setWalkLogs] = useState<WalkLogEntry[]>([]);
+  const [memberProfile, setMemberProfile] = useState<MemberProfile>(
+    DEFAULT_MEMBER_PROFILE
+  );
+  const [memberPreferences, setMemberPreferences] = useState<MemberPreferences>(
+    DEFAULT_MEMBER_PREFERENCES
+  );
+  const [customSpots, setCustomSpots] = useState<CustomWalkSpot[]>([]);
+  const [careReminders, setCareReminders] = useState<CareReminder[]>([]);
+  const [gearChecklist, setGearChecklist] = useState<GearChecklistItem[]>(() =>
+    getDefaultGearChecklist('en')
+  );
+  const [householdId, setHouseholdId] = useState<string | null>(null);
   const [pendingDeepLinkSpotId, setPendingDeepLinkSpotId] = useState<
     string | null
   >(null);
   const [hydrated, setHydrated] = useState(false);
-  const { user, pullCloudProfile, pushCloudProfile } = useAuth();
+  const {
+    user,
+    pullCloudProfile,
+    pushCloudProfile,
+    updateAuthDisplayName,
+    createHousehold,
+    joinHousehold,
+    pullHousehold,
+    pushHousehold,
+    leaveHousehold,
+  } = useAuth();
   const pulledUidRef = useRef<string | null>(null);
   const suppressNextCloudPushRef = useRef(false);
 
@@ -517,6 +639,32 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
           if (parsed.location) {
             setLocationState(parseStoredLocation(parsed.location));
           }
+          if (parsed.memberProfile) {
+            setMemberProfile(parseMemberProfile(parsed.memberProfile));
+          }
+          if (parsed.memberPreferences) {
+            setMemberPreferences(
+              parseMemberPreferences(
+                parsed.memberPreferences,
+                parseStoredLocation
+              )
+            );
+          }
+          if (Array.isArray(parsed.customSpots)) {
+            setCustomSpots(parseCustomWalkSpots(parsed.customSpots));
+          }
+          if (Array.isArray(parsed.careReminders)) {
+            setCareReminders(parseCareReminders(parsed.careReminders));
+          }
+          const parsedGear = parseGearChecklist(parsed.gearChecklist);
+          if (parsedGear) {
+            setGearChecklist(parsedGear);
+          } else if (parsed.language === 'zh') {
+            setGearChecklist(getDefaultGearChecklist('zh'));
+          }
+          if (typeof parsed.householdId === 'string' && parsed.householdId) {
+            setHouseholdId(sanitizeText(parsed.householdId, 64) || null);
+          }
         }
 
         // Apply allow-listed web URL deep link (#spot=<id> / #suburb=<id> / #city=<name>)
@@ -574,6 +722,12 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       activeDogIds,
       walkLogs,
       location,
+      memberProfile,
+      memberPreferences,
+      customSpots,
+      careReminders,
+      gearChecklist,
+      householdId,
     });
     AsyncStorage.setItem(STORAGE_KEY_PREFS, payload).catch(() => {});
   }, [
@@ -587,6 +741,12 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     activeDogIds,
     walkLogs,
     location,
+    memberProfile,
+    memberPreferences,
+    customSpots,
+    careReminders,
+    gearChecklist,
+    householdId,
   ]);
 
   const latestSyncStateRef = useRef({
@@ -598,6 +758,12 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     activeDogIds,
     walkLogs,
     location,
+    memberProfile,
+    memberPreferences,
+    customSpots,
+    careReminders,
+    gearChecklist,
+    householdId,
   });
   latestSyncStateRef.current = {
     units,
@@ -608,9 +774,72 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     activeDogIds,
     walkLogs,
     location,
+    memberProfile,
+    memberPreferences,
+    customSpots,
+    careReminders,
+    gearChecklist,
+    householdId,
   };
 
-  // Pull signed-in user's cloud profile from Firestore once per sign-in session
+  const applySharedHouseholdData = useCallback(
+    (raw: Record<string, unknown>) => {
+      suppressNextCloudPushRef.current = true;
+      if (Array.isArray(raw.savedPlaceIds)) {
+        setSavedPlaceIds(
+          raw.savedPlaceIds
+            .filter((x): x is string => typeof x === 'string')
+            .map((x) => sanitizeText(x, 48))
+            .filter(Boolean)
+            .slice(0, 50)
+        );
+      }
+      if (Array.isArray(raw.dogs) && raw.dogs.length > 0) {
+        const localAvatarById = new Map(
+          latestSyncStateRef.current.dogs.map((d) => [
+            d.id || 'dog-primary',
+            d.customPhotoUri ?? null,
+          ])
+        );
+        const parsedDogs = raw.dogs
+          .slice(0, MAX_HOUSEHOLD_DOGS)
+          .map((d, idx) => {
+            const fallbackId = idx === 0 ? 'dog-primary' : `dog-${idx + 1}`;
+            const parsed = parseStoredDog(d, fallbackId);
+            if (!parsed.customPhotoUri) {
+              const preserved = localAvatarById.get(parsed.id || fallbackId);
+              if (preserved) {
+                return { ...parsed, customPhotoUri: preserved };
+              }
+            }
+            return parsed;
+          });
+        setDogs(parsedDogs);
+        const validIds = new Set(parsedDogs.map((d) => d.id || 'dog-primary'));
+        if (Array.isArray(raw.activeDogIds)) {
+          const cleanActive = raw.activeDogIds.filter(
+            (x): x is string => typeof x === 'string' && validIds.has(x)
+          );
+          setActiveDogIds(
+            cleanActive.length > 0
+              ? cleanActive
+              : [parsedDogs[0].id || 'dog-primary']
+          );
+        } else {
+          setActiveDogIds([parsedDogs[0].id || 'dog-primary']);
+        }
+      }
+      if (Array.isArray(raw.walkLogs)) {
+        setWalkLogs(parseStoredWalkLogs(raw.walkLogs));
+      }
+      if (Array.isArray(raw.careReminders)) {
+        setCareReminders(parseCareReminders(raw.careReminders));
+      }
+    },
+    []
+  );
+
+  // Pull signed-in user's cloud profile (and optional shared household) once per sign-in session
   useEffect(() => {
     if (!hydrated) return;
     if (!user?.uid) {
@@ -700,13 +929,64 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
         if (cloud.location) {
           setLocationState(parseStoredLocation(cloud.location));
         }
+        if (cloud.memberProfile) {
+          const parsedProfile = parseMemberProfile(cloud.memberProfile);
+          setMemberProfile({
+            displayName: parsedProfile.displayName || user.displayName || '',
+            avatarUri:
+              parsedProfile.avatarUri ||
+              latestSyncStateRef.current.memberProfile.avatarUri ||
+              null,
+          });
+        } else if (user.displayName) {
+          setMemberProfile((prev) => ({
+            ...prev,
+            displayName: prev.displayName || user.displayName,
+          }));
+        }
+        if (cloud.memberPreferences) {
+          setMemberPreferences(
+            parseMemberPreferences(cloud.memberPreferences, parseStoredLocation)
+          );
+        }
+        if (Array.isArray(cloud.customSpots)) {
+          setCustomSpots(parseCustomWalkSpots(cloud.customSpots));
+        }
+        if (Array.isArray(cloud.careReminders)) {
+          setCareReminders(parseCareReminders(cloud.careReminders));
+        }
+        const cloudGear = parseGearChecklist(cloud.gearChecklist);
+        if (cloudGear) {
+          setGearChecklist(cloudGear);
+        }
+
+        const cloudHhId =
+          typeof cloud.householdId === 'string'
+            ? sanitizeText(cloud.householdId, 64)
+            : '';
+        setHouseholdId(cloudHhId || null);
+        if (cloudHhId) {
+          const hhRaw = await pullHousehold(cloudHhId);
+          if (active && hhRaw) {
+            applySharedHouseholdData(hhRaw);
+          }
+        }
       } else {
-        // First sign-in on a fresh account: back up the user's current local profile
+        // First sign-in on a fresh account: preserve auth displayName & back up local state
         const snap = latestSyncStateRef.current;
+        const mergedProfile: MemberProfile = {
+          displayName: snap.memberProfile.displayName || user.displayName || '',
+          avatarUri: snap.memberProfile.avatarUri ?? null,
+        };
+        if (mergedProfile.displayName !== snap.memberProfile.displayName) {
+          suppressNextCloudPushRef.current = true;
+          setMemberProfile(mergedProfile);
+        }
         await pushCloudProfile({
-          schemaVersion: 1,
+          schemaVersion: 2,
           updatedAtMs: Date.now(),
           ...snap,
+          memberProfile: mergedProfile,
         });
       }
     })();
@@ -714,9 +994,17 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       active = false;
     };
-  }, [hydrated, user?.uid, pullCloudProfile, pushCloudProfile]);
+  }, [
+    hydrated,
+    user?.uid,
+    user?.displayName,
+    pullCloudProfile,
+    pushCloudProfile,
+    pullHousehold,
+    applySharedHouseholdData,
+  ]);
 
-  // Debounced background cloud sync whenever profile/saved parks/walk logs change while signed in
+  // Debounced background cloud sync whenever profile/preferences/spots/logs change while signed in
   useEffect(() => {
     if (!hydrated || !user?.uid || pulledUidRef.current !== user.uid) {
       return;
@@ -727,7 +1015,7 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     const timer = setTimeout(() => {
       pushCloudProfile({
-        schemaVersion: 1,
+        schemaVersion: 2,
         updatedAtMs: Date.now(),
         units,
         language,
@@ -737,12 +1025,33 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
         activeDogIds,
         walkLogs,
         location,
+        memberProfile,
+        memberPreferences,
+        customSpots,
+        careReminders,
+        gearChecklist,
+        householdId,
       }).catch(() => {});
+
+      if (householdId) {
+        pushHousehold(
+          householdId,
+          memberProfile.displayName || user.displayName || '',
+          {
+            dogs,
+            activeDogIds,
+            savedPlaceIds,
+            walkLogs,
+            careReminders,
+          }
+        ).catch(() => {});
+      }
     }, 1500);
     return () => clearTimeout(timer);
   }, [
     hydrated,
     user?.uid,
+    user?.displayName,
     units,
     language,
     savedPlaceIds,
@@ -751,18 +1060,42 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     activeDogIds,
     walkLogs,
     location,
+    memberProfile,
+    memberPreferences,
+    customSpots,
+    careReminders,
+    gearChecklist,
+    householdId,
     pushCloudProfile,
+    pushHousehold,
   ]);
 
   const syncCloudNow = useCallback(async (): Promise<boolean> => {
     if (!user?.uid) return false;
     const snap = latestSyncStateRef.current;
-    return pushCloudProfile({
-      schemaVersion: 1,
+    const ok = await pushCloudProfile({
+      schemaVersion: 2,
       updatedAtMs: Date.now(),
       ...snap,
     });
-  }, [user?.uid, pushCloudProfile]);
+    if (snap.householdId) {
+      const hhRaw = await pullHousehold(snap.householdId);
+      if (hhRaw) {
+        await pushHousehold(
+          snap.householdId,
+          snap.memberProfile.displayName || user.displayName || '',
+          {
+            dogs: snap.dogs,
+            activeDogIds: snap.activeDogIds,
+            savedPlaceIds: snap.savedPlaceIds,
+            walkLogs: snap.walkLogs,
+            careReminders: snap.careReminders,
+          }
+        );
+      }
+    }
+    return ok;
+  }, [user?.uid, user?.displayName, pushCloudProfile, pullHousehold, pushHousehold]);
 
   const fetchSeqRef = useRef(0);
 
@@ -980,9 +1313,20 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       cityLabel: string;
       durationMin: number;
       distanceKm: number;
+      tags?: WalkLogTag[];
+      note?: string;
     }) => {
       const cleanName = sanitizeText(entry.placeName, 70);
       if (!cleanName) return;
+      const cleanTags = Array.isArray(entry.tags)
+        ? entry.tags
+            .filter((t): t is WalkLogTag => WALK_LOG_TAG_KEYS.includes(t))
+            .slice(0, 6)
+        : undefined;
+      const cleanNote = sanitizeText(entry.note, 100) || undefined;
+      const walkerLabel =
+        sanitizeText(memberProfile.displayName || user?.displayName, 40) ||
+        undefined;
       const record: WalkLogEntry = {
         id: `walk-${Date.now().toString(36)}`,
         timestampMs: Date.now(),
@@ -998,15 +1342,293 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
           Math.min(30, Math.round((entry.distanceKm || 1.5) * 10) / 10)
         ),
         dogNames: activeDogs.map((d) => d.name),
+        ...(cleanTags && cleanTags.length > 0 ? { tags: cleanTags } : {}),
+        ...(cleanNote ? { note: cleanNote } : {}),
+        ...(walkerLabel ? { loggedBy: walkerLabel } : {}),
       };
       setWalkLogs((prev) => [record, ...prev].slice(0, MAX_WALK_LOGS));
     },
-    [activeDogs]
+    [activeDogs, memberProfile.displayName, user?.displayName]
   );
 
   const deleteWalkLog = useCallback((logId: string) => {
     setWalkLogs((prev) => prev.filter((item) => item.id !== logId));
   }, []);
+
+  const updateMemberProfile = useCallback(
+    (patch: Partial<MemberProfile>) => {
+      setMemberProfile((prev) => {
+        const next: MemberProfile = {
+          displayName:
+            patch.displayName !== undefined
+              ? sanitizeText(patch.displayName, 40)
+              : prev.displayName,
+          avatarUri:
+            patch.avatarUri !== undefined
+              ? sanitizeAvatarDataUri(patch.avatarUri)
+              : prev.avatarUri ?? null,
+        };
+        if (patch.displayName !== undefined && user?.uid) {
+          updateAuthDisplayName(next.displayName).catch(() => {});
+        }
+        return next;
+      });
+    },
+    [user?.uid, updateAuthDisplayName]
+  );
+
+  const updateMemberPreferences = useCallback(
+    (patch: Partial<MemberPreferences>) => {
+      setMemberPreferences((prev) => ({
+        ...prev,
+        ...patch,
+        ...(patch.inviteSignature !== undefined
+          ? { inviteSignature: sanitizeText(patch.inviteSignature, 60) }
+          : {}),
+        ...(patch.defaultMapFilters !== undefined
+          ? { defaultMapFilters: parseDefaultMapFilters(patch.defaultMapFilters) }
+          : {}),
+        ...(patch.weeklyWalkGoal !== undefined
+          ? {
+              weeklyWalkGoal: Math.max(
+                1,
+                Math.min(21, Math.round(patch.weeklyWalkGoal))
+              ),
+            }
+          : {}),
+        ...(patch.weeklyKmGoal !== undefined
+          ? {
+              weeklyKmGoal: Math.max(
+                1,
+                Math.min(100, Math.round(patch.weeklyKmGoal))
+              ),
+            }
+          : {}),
+      }));
+    },
+    []
+  );
+
+  const pinLocation = useCallback(
+    (label: string, targetLoc?: LocationPoint) => {
+      const target = targetLoc || location;
+      const safeLabel =
+        sanitizeText(label, 24) || target.name.split(' · ').pop() || 'Pinned';
+      if (!isValidCoordinate(target.latitude, target.longitude)) return;
+      setMemberPreferences((prev) => {
+        const filtered = prev.pinnedLocations.filter(
+          (p) =>
+            p.label.toLowerCase() !== safeLabel.toLowerCase() &&
+            !(
+              Math.abs(p.location.latitude - target.latitude) < 0.002 &&
+              Math.abs(p.location.longitude - target.longitude) < 0.002
+            )
+        );
+        const nextPin = {
+          id: `pin-${Date.now().toString(36)}`,
+          label: safeLabel,
+          location: { ...target, isCurrentDeviceLocation: false },
+        };
+        return {
+          ...prev,
+          pinnedLocations: [nextPin, ...filtered].slice(0, MAX_PINNED_LOCATIONS),
+        };
+      });
+    },
+    [location]
+  );
+
+  const unpinLocation = useCallback((pinId: string) => {
+    setMemberPreferences((prev) => ({
+      ...prev,
+      pinnedLocations: prev.pinnedLocations.filter((p) => p.id !== pinId),
+    }));
+  }, []);
+
+  const saveDefaultMapFilters = useCallback((filters: DefaultMapFilters) => {
+    setMemberPreferences((prev) => ({
+      ...prev,
+      defaultMapFilters: parseDefaultMapFilters(filters),
+    }));
+  }, []);
+
+  const addCustomSpot = useCallback(
+    (spot: {
+      name: string;
+      category: PlaceCategory;
+      latitude?: number;
+      longitude?: number;
+      suburbLabel?: string;
+      note?: string;
+      tags?: string[];
+    }): boolean => {
+      const cleanName = sanitizeText(spot.name, 50);
+      const lat = spot.latitude ?? location.latitude;
+      const lon = spot.longitude ?? location.longitude;
+      if (!cleanName || !isValidCoordinate(lat, lon)) return false;
+      const nextSpot: CustomWalkSpot = {
+        id: `custom-${Date.now().toString(36)}`,
+        name: cleanName,
+        category: spot.category,
+        latitude: lat,
+        longitude: lon,
+        suburbLabel:
+          sanitizeText(spot.suburbLabel, 40) ||
+          location.name.split(' · ').pop() ||
+          'My Spot',
+        note: sanitizeText(spot.note, 120),
+        tags: (spot.tags || [])
+          .map((t) => sanitizeText(t, 20))
+          .filter(Boolean)
+          .slice(0, 4),
+        createdAtMs: Date.now(),
+      };
+      setCustomSpots((prev) => [nextSpot, ...prev].slice(0, MAX_CUSTOM_SPOTS));
+      return true;
+    },
+    [location.latitude, location.longitude, location.name]
+  );
+
+  const removeCustomSpot = useCallback((spotId: string) => {
+    setCustomSpots((prev) => prev.filter((s) => s.id !== spotId));
+  }, []);
+
+  const addCareReminder = useCallback(
+    (reminder: {
+      dogName?: string;
+      type: CareReminderType;
+      title: string;
+      dueDateIso: string;
+      repeatMonths: CareReminder['repeatMonths'];
+    }): boolean => {
+      const cleanTitle = sanitizeText(reminder.title, 50);
+      const safeDate = sanitizeIsoDate(reminder.dueDateIso);
+      if (!cleanTitle || !safeDate) return false;
+      const nextItem: CareReminder = {
+        id: `rem-${Date.now().toString(36)}`,
+        dogName:
+          sanitizeDogName(reminder.dogName) ||
+          activeDogs[0]?.name ||
+          DEFAULT_DOG_PROFILE.name,
+        type: reminder.type,
+        title: cleanTitle,
+        dueDateIso: safeDate,
+        repeatMonths: reminder.repeatMonths,
+      };
+      setCareReminders((prev) =>
+        [nextItem, ...prev]
+          .slice(0, MAX_CARE_REMINDERS)
+          .sort((a, b) => a.dueDateIso.localeCompare(b.dueDateIso))
+      );
+      return true;
+    },
+    [activeDogs]
+  );
+
+  const removeCareReminder = useCallback((reminderId: string) => {
+    setCareReminders((prev) => prev.filter((r) => r.id !== reminderId));
+  }, []);
+
+  const completeCareReminder = useCallback((reminderId: string) => {
+    setCareReminders((prev) =>
+      prev
+        .flatMap((r) => {
+          if (r.id !== reminderId) return [r];
+          if (r.repeatMonths <= 0) return [];
+          return [
+            {
+              ...r,
+              dueDateIso: advanceReminderIsoDate(r.dueDateIso, r.repeatMonths),
+            },
+          ];
+        })
+        .sort((a, b) => a.dueDateIso.localeCompare(b.dueDateIso))
+    );
+  }, []);
+
+  const toggleGearItem = useCallback((itemId: string) => {
+    setGearChecklist((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, checked: !item.checked } : item
+      )
+    );
+  }, []);
+
+  const addGearItem = useCallback(
+    (label: string, trigger: GearTrigger): boolean => {
+      const cleanLabel = sanitizeText(label, 40);
+      if (!cleanLabel) return false;
+      setGearChecklist((prev) =>
+        [
+          ...prev,
+          {
+            id: `gear-${Date.now().toString(36)}`,
+            label: cleanLabel,
+            trigger,
+            checked: false,
+          },
+        ].slice(0, MAX_GEAR_ITEMS)
+      );
+      return true;
+    },
+    []
+  );
+
+  const removeGearItem = useCallback((itemId: string) => {
+    setGearChecklist((prev) => prev.filter((item) => item.id !== itemId));
+  }, []);
+
+  const startHouseholdShare = useCallback(async (): Promise<{
+    ok: boolean;
+    inviteToken?: string;
+  }> => {
+    if (!user?.uid) return { ok: false };
+    const snap = latestSyncStateRef.current;
+    const res = await createHousehold(
+      snap.memberProfile.displayName || user.displayName || 'Owner',
+      {
+        dogs: snap.dogs,
+        activeDogIds: snap.activeDogIds,
+        savedPlaceIds: snap.savedPlaceIds,
+        walkLogs: snap.walkLogs,
+        careReminders: snap.careReminders,
+      }
+    );
+    if (res.ok && res.householdId) {
+      setHouseholdId(res.householdId);
+      return { ok: true, inviteToken: res.inviteToken };
+    }
+    return { ok: false };
+  }, [user?.uid, user?.displayName, createHousehold]);
+
+  const joinHouseholdByCode = useCallback(
+    async (token: string): Promise<boolean> => {
+      if (!user?.uid) return false;
+      const snap = latestSyncStateRef.current;
+      const res = await joinHousehold(
+        snap.memberProfile.displayName || user.displayName || 'Co-Walker',
+        token
+      );
+      if (res.ok && res.householdId) {
+        setHouseholdId(res.householdId);
+        if (res.rawData) {
+          applySharedHouseholdData(res.rawData);
+        }
+        return true;
+      }
+      return false;
+    },
+    [user?.uid, user?.displayName, joinHousehold, applySharedHouseholdData]
+  );
+
+  const leaveCurrentHousehold = useCallback(async (): Promise<boolean> => {
+    if (!householdId) return false;
+    const ok = await leaveHousehold(householdId);
+    if (ok) {
+      setHouseholdId(null);
+    }
+    return ok;
+  }, [householdId, leaveHousehold]);
 
   const clearPendingDeepLinkSpot = useCallback(() => {
     setPendingDeepLinkSpotId(null);
@@ -1237,16 +1859,26 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
   const selectedHour =
     scoredHours.length > 0 ? scoredHours[safeSelectedIndex] : null;
 
+  const combinedPlaces = useMemo<WalkPlace[]>(() => {
+    const nearbyCustom = customSpots
+      .map((spot) =>
+        customSpotToWalkPlace(spot, location.latitude, location.longitude)
+      )
+      .filter((wp) => wp.distanceKm <= 25);
+    if (nearbyCustom.length === 0) return rawPlaces;
+    return [...nearbyCustom, ...rawPlaces];
+  }, [customSpots, rawPlaces, location.latitude, location.longitude]);
+
   const scoredPlaces = useMemo<ScoredPlace[]>(
     () =>
       scorePlacesForHour(
-        rawPlaces,
+        combinedPlaces,
         selectedHour,
         effectiveDog,
         location.timezone === 'auto' ? undefined : location.timezone,
         language
       ),
-    [rawPlaces, selectedHour, effectiveDog, location.timezone, language]
+    [combinedPlaces, selectedHour, effectiveDog, location.timezone, language]
   );
 
   const hasCuratedPlacesFallback = useMemo(
@@ -1290,6 +1922,28 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       walkLogs,
       logWalk,
       deleteWalkLog,
+      memberProfile,
+      updateMemberProfile,
+      memberPreferences,
+      updateMemberPreferences,
+      pinLocation,
+      unpinLocation,
+      saveDefaultMapFilters,
+      customSpots,
+      addCustomSpot,
+      removeCustomSpot,
+      careReminders,
+      addCareReminder,
+      removeCareReminder,
+      completeCareReminder,
+      gearChecklist,
+      toggleGearItem,
+      addGearItem,
+      removeGearItem,
+      householdId,
+      startHouseholdShare,
+      joinHouseholdByCode,
+      leaveCurrentHousehold,
       pendingDeepLinkSpotId,
       clearPendingDeepLinkSpot,
       isLoading,
@@ -1340,6 +1994,28 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       walkLogs,
       logWalk,
       deleteWalkLog,
+      memberProfile,
+      updateMemberProfile,
+      memberPreferences,
+      updateMemberPreferences,
+      pinLocation,
+      unpinLocation,
+      saveDefaultMapFilters,
+      customSpots,
+      addCustomSpot,
+      removeCustomSpot,
+      careReminders,
+      addCareReminder,
+      removeCareReminder,
+      completeCareReminder,
+      gearChecklist,
+      toggleGearItem,
+      addGearItem,
+      removeGearItem,
+      householdId,
+      startHouseholdShare,
+      joinHouseholdByCode,
+      leaveCurrentHousehold,
       pendingDeepLinkSpotId,
       clearPendingDeepLinkSpot,
       isLoading,

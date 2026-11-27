@@ -291,6 +291,14 @@ export function scoreWeatherHour(
     comfortLowC += 2;
     comfortHighC -= 1.5;
   }
+  if (
+    typeof dog.customMaxTempC === 'number' &&
+    Number.isFinite(dog.customMaxTempC) &&
+    dog.customMaxTempC >= 15 &&
+    dog.customMaxTempC <= 30
+  ) {
+    comfortHighC = dog.customMaxTempC;
+  }
 
   const effectiveTempC = w.feelsLikeC * 0.6 + w.tempC * 0.4;
 
@@ -348,18 +356,19 @@ export function scoreWeatherHour(
     score -= 50;
     reasons.push('heavy_rain_storm');
   } else if (isHeavyPrecip || w.precipProb >= 70) {
-    score -= 30;
+    score -= dog.hatesRain ? 38 : 30;
     reasons.push('heavy_rain_storm');
   } else if (w.precipProb >= 35 || w.precipMm >= 0.3) {
-    score -= Math.round((w.precipProb - 20) * 0.38);
+    score -= Math.round((w.precipProb - 20) * (dog.hatesRain ? 0.55 : 0.38));
     reasons.push('rain_likely');
   } else if (isPostRainWetTurf) {
     const lowBellyOrFluffy =
       dog.size === 'small' ||
       dog.coat === 'thick' ||
       dog.breedId === 'corgi' ||
-      dog.breedId === 'poodle';
-    score -= lowBellyOrFluffy ? 6 : 3;
+      dog.breedId === 'poodle' ||
+      Boolean(dog.hatesRain);
+    score -= dog.hatesRain ? 11 : lowBellyOrFluffy ? 6 : 3;
     reasons.unshift('wet_grass_post_rain');
   }
 
@@ -493,6 +502,10 @@ export function mergePackDogProfile(
       ? 'short'
       : 'medium';
 
+  const customCaps = dogs
+    .map((d) => d.customMaxTempC)
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+
   return {
     ...primary,
     name: displayName,
@@ -502,6 +515,10 @@ export function mergePackDogProfile(
     brachycephalic: dogs.some((d) => d.brachycephalic),
     pawSensitivity: strictestPaw,
     hasDogLicense: dogs.every((d) => d.hasDogLicense),
+    quietMode: dogs.some((d) => d.quietMode),
+    hatesRain: dogs.some((d) => d.hatesRain),
+    lovesWater: dogs.some((d) => d.lovesWater),
+    customMaxTempC: customCaps.length > 0 ? Math.min(...customCaps) : null,
   };
 }
 
@@ -704,6 +721,13 @@ export function scorePlacesForHour(
               ? 19
               : 24;
       let spacePts = place.spaceScore30 ?? defaultSpace;
+      if (dog?.quietMode) {
+        if (place.category === 'trail' || place.leashPolicy === 'leashed_only') {
+          spacePts = Math.min(30, spacePts + 3);
+        } else if (place.category === 'dog_beach' || place.category === 'dog_park') {
+          spacePts = Math.max(12, spacePts - 4);
+        }
+      }
       if (
         place.maxDogWeightKg &&
         dog &&
@@ -839,6 +863,13 @@ export function scorePlacesForHour(
       // Pillar 4: Dog Freedom & Rule Fit (0..20)
       let dogPts = hasOffLeash ? 18 : 14;
       if (hasWater) dogPts = Math.min(20, dogPts + 2);
+      if (
+        dog?.lovesWater &&
+        (place.category === 'dog_beach' || hasWater) &&
+        openStatus.isOpen
+      ) {
+        dogPts = Math.min(20, dogPts + 3);
+      }
       if (
         dog &&
         dog.hasDogLicense === false &&
