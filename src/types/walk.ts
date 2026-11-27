@@ -348,3 +348,20 @@ export interface HouseholdSummary {
   activeInviteToken?: string | null;
   updatedAtMs: number;
 }
+
+export interface PhotoMemory {
+  id: string;
+  /** Compact 160x160 EXIF-stripped JPEG Data URI for map pin thumbnails. */
+  thumbnailUri: string;
+  /** Medium max-560px EXIF-stripped JPEG Data URI for full lightbox view. */
+  photoUri: string;
+  latitude: number;
+  longitude: number;
+  placeName: string;
+  suburbLabel: string;
+  caption: string;
+  /** Strict `YYYY-MM-DD` date string. */
+  takenDateIso: string;
+  dogNames: string[];
+  createdAtMs: number;
+}

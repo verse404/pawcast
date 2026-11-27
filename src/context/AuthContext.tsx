@@ -14,15 +14,18 @@ import {
   CloudSyncPayload,
   createHouseholdInviteToken,
   createHouseholdShare,
+  deleteCloudPhotoMemory,
   deleteCurrentAccount,
   HouseholdSharedState,
   joinHouseholdWithToken,
   leaveHouseholdShare,
+  loadCloudPhotoMemories,
   loadCloudUserState,
   loadHouseholdShare,
   requestPasswordReset,
   resendVerificationEmail,
   revokeHouseholdInviteToken,
+  saveCloudPhotoMemory,
   saveCloudUserState,
   saveHouseholdShare,
   signInWithEmail,
@@ -32,7 +35,7 @@ import {
   updateCurrentAuthDisplayName,
 } from '../services/authService';
 import { isFirebaseConfigured } from '../services/firebaseClient';
-import { HouseholdSummary } from '../types/walk';
+import { HouseholdSummary, PhotoMemory } from '../types/walk';
 
 export type CloudSyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -56,6 +59,9 @@ interface AuthContextValue {
   deleteAccount: (currentPassword: string) => Promise<AuthActionResult>;
   pullCloudProfile: () => Promise<Record<string, unknown> | null>;
   pushCloudProfile: (payload: CloudSyncPayload) => Promise<boolean>;
+  pullCloudPhotoMemories: () => Promise<Array<Record<string, unknown>>>;
+  pushCloudPhotoMemory: (memory: PhotoMemory) => Promise<boolean>;
+  removeCloudPhotoMemory: (photoId: string) => Promise<boolean>;
   createHousehold: (
     displayName: string,
     initial: HouseholdSharedState
@@ -150,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const res = await deleteCurrentAccount(currentPassword);
     if (res.ok) {
       await AsyncStorage.removeItem('@pawcast/multi-region/v2.2').catch(() => {});
+      await AsyncStorage.removeItem('@pawcast/photo-memories/v1').catch(() => {});
       setUser(null);
       setSyncStatus('idle');
       setLastSyncedAtMs(null);
@@ -184,6 +191,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setSyncStatus('error');
       }
       return ok;
+    },
+    [user?.uid]
+  );
+
+  const pullCloudPhotoMemories = useCallback(async () => {
+    if (!user?.uid) return [];
+    return loadCloudPhotoMemories(user.uid);
+  }, [user?.uid]);
+
+  const pushCloudPhotoMemory = useCallback(
+    async (memory: PhotoMemory) => {
+      if (!user?.uid) return false;
+      return saveCloudPhotoMemory(user.uid, memory);
+    },
+    [user?.uid]
+  );
+
+  const removeCloudPhotoMemory = useCallback(
+    async (photoId: string) => {
+      if (!user?.uid) return false;
+      return deleteCloudPhotoMemory(user.uid, photoId);
     },
     [user?.uid]
   );
@@ -299,6 +327,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       deleteAccount,
       pullCloudProfile,
       pushCloudProfile,
+      pullCloudPhotoMemories,
+      pushCloudPhotoMemory,
+      removeCloudPhotoMemory,
       createHousehold,
       regenerateHouseholdInvite,
       revokeHouseholdInvite,
@@ -322,6 +353,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       deleteAccount,
       pullCloudProfile,
       pushCloudProfile,
+      pullCloudPhotoMemories,
+      pushCloudPhotoMemory,
+      removeCloudPhotoMemory,
       createHousehold,
       regenerateHouseholdInvite,
       revokeHouseholdInvite,

@@ -28,8 +28,10 @@ We built PawCast with a **privacy-by-design, local-first architecture**:
 - **Signed-In Mode (Optional):** If you choose to create an account with **Firebase Email/Password Sign-In**, PawCast stores your email address and optional display name in **Firebase Authentication** and syncs your sanitized profile (`memberProfile`, `memberPreferences`, dogs, pinned suburbs, custom spots, lightweight reminder dates, gear checklist, saved parks, notes, and walk logs) to a private per-user **Cloud Firestore** document (`users/{uid}/pawcast/profile`) restricted strictly to your authenticated user ID (`request.auth.uid == userId`).
 - **Optional Household / Co-Walker Sharing:** If you explicitly create or join a shared household using a single-use cryptographic invite token (`192-bit` random code), your shared dog pack, saved parks, walk logs, and care reminders are stored in `households/{householdId}` accessible exclusively to the up to 4 authenticated members in `memberUids`. You may leave or disband a shared household at any time.
 
-### C. Optional Member & Dog Profile Photos (Camera / Photo Library)
-- If you upload or snap a custom portrait for yourself or your dog, PawCast verifies image magic bytes (`JPEG`/`PNG`/`WebP`), crops and re-encodes the image locally on your device (`256×256`, stripping camera EXIF/GPS metadata), and stores it locally. In Guest Mode, photos never leave your device. If you opt into Cloud Sync, compact resized portraits (`<= 120 KB`) sync inside your private per-user Firestore profile.
+### C. Optional Member, Dog & Walk Map Photos (Camera / Photo Library)
+- If you upload or snap a portrait (for yourself or your dog) or pin a walk memory on the **Photos** map tab, PawCast verifies image magic bytes (`JPEG`/`PNG`/`WebP`) and re-encodes the image locally on your device through an offscreen canvas (stripping camera EXIF metadata) before saving.
+- For walk memory photos, optional JPEG EXIF GPS coordinates and capture date are read strictly locally on your device so you can preview or override the map pin location before saving; the saved image itself contains no EXIF metadata.
+- In Guest Mode, photos never leave your device. If you opt into Cloud Sync, compact resized portraits (`<= 120 KB`) sync inside your private per-user Firestore profile and walk map photos sync in your private `users/{uid}/photoMemories` subcollection, permanently erased whenever you delete a photo or delete your account.
 
 ---
 

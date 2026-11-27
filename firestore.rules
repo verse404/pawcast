@@ -54,6 +54,47 @@ service cloud.firestore {
         && (!('householdId' in request.resource.data) || request.resource.data.householdId == null || (request.resource.data.householdId is string && request.resource.data.householdId.size() <= 64));
     }
 
+    // 1B. Per-User Geotagged Photo Memory Collection (1 doc per photo, well under 1 MiB)
+    match /users/{userId}/photoMemories/{photoId} {
+      allow read, delete: if request.auth != null
+        && request.auth.uid == userId;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && photoId.size() <= 48
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'thumbnailUri',
+          'photoUri',
+          'latitude',
+          'longitude',
+          'placeName',
+          'suburbLabel',
+          'caption',
+          'takenDateIso',
+          'dogNames',
+          'createdAtMs'
+        ])
+        && request.resource.data.id == photoId
+        && request.resource.data.thumbnailUri is string
+        && request.resource.data.thumbnailUri.size() <= 48000
+        && request.resource.data.photoUri is string
+        && request.resource.data.photoUri.size() <= 170000
+        && request.resource.data.latitude is number
+        && request.resource.data.longitude is number
+        && request.resource.data.placeName is string
+        && request.resource.data.placeName.size() <= 60
+        && request.resource.data.suburbLabel is string
+        && request.resource.data.suburbLabel.size() <= 50
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 120
+        && request.resource.data.takenDateIso is string
+        && request.resource.data.takenDateIso.size() == 10
+        && request.resource.data.dogNames is list
+        && request.resource.data.dogNames.size() <= 5
+        && request.resource.data.createdAtMs is int;
+    }
+
     // 2. Cryptographically Random Single-Use Household Invite Tokens (No Enumeration)
     match /householdInvites/{inviteToken} {
       allow list: if false;

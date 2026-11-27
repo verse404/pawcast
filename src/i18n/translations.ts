@@ -17,6 +17,8 @@ export interface AppStrings {
   tabWalkNow: string;
   /** @desc Bottom tab label for Map screen [CHAR_LIMIT=12] */
   tabExploreMap: string;
+  /** @desc Bottom tab label for Photo Memory Map screen [CHAR_LIMIT=14] */
+  tabPhotoMap: string;
   /** @desc Error boundary title [CHAR_LIMIT=40] */
   errorTitle: string;
   /** @desc Error boundary description [CHAR_LIMIT=NONE] */
@@ -416,6 +418,34 @@ export interface AppStrings {
   walkLoggedByPrefix: string;
   pinnedAreasHeader: string;
   pinThisAreaShort: string;
+
+  // Photo Memory Map Tab
+  photosCountSummary: (photos: string, places: string) => string;
+  photosViewMap: string;
+  photosViewGrid: string;
+  photosAddBtn: string;
+  photosAddFirstBtn: string;
+  photosFitAllBtn: string;
+  photosEmptyTitle: string;
+  photosEmptySub: string;
+  photosTapMapPrompt: string;
+  photosViewFullBtn: string;
+  photosOpenSpotMaps: string;
+  photosShowPinOnMap: string;
+  photosComposerTitle: string;
+  photosExifGpsFound: string;
+  photosPinnedOnMap: string;
+  photosNoExifFallback: string;
+  photosChoosePinSpotLabel: string;
+  photosDropPinBtn: string;
+  photosPlaceLabel: string;
+  photosPlacePlaceholder: string;
+  photosCaptionLabel: string;
+  photosCaptionPlaceholder: string;
+  photosDateLabel: string;
+  photosSaveToMapBtn: string;
+  photosDeleteBtn: string;
+  photosConfirmDeleteBtn: string;
 }
 
 const EN_STRINGS: AppStrings = {
@@ -424,6 +454,7 @@ const EN_STRINGS: AppStrings = {
   iphoneFrameToggle: 'iPhone Preview',
   tabWalkNow: 'Walk Now',
   tabExploreMap: 'Map',
+  tabPhotoMap: 'Photos',
   errorTitle: 'PawCast hit a quick snag',
   errorSub: 'Tap below to restore your live walk forecast and saved parks.',
   errorReload: 'Reload PawCast',
@@ -846,6 +877,35 @@ const EN_STRINGS: AppStrings = {
   walkLoggedByPrefix: 'by',
   pinnedAreasHeader: 'Pinned Areas',
   pinThisAreaShort: 'Pin Current',
+
+  photosCountSummary: (photos, places) =>
+    `${photos} Photos · ${places} Spots`,
+  photosViewMap: 'Map',
+  photosViewGrid: 'Grid',
+  photosAddBtn: '+ Photo',
+  photosAddFirstBtn: '+ Add Walk Photo',
+  photosFitAllBtn: 'Fit All',
+  photosEmptyTitle: 'Your Walk Photo Map',
+  photosEmptySub:
+    'Pin favorite photos of your walks right where you took them. JPEG GPS locations are detected automatically (or tap any park or map spot).',
+  photosTapMapPrompt: 'Tap anywhere on the map to pin this photo',
+  photosViewFullBtn: 'View Photo',
+  photosOpenSpotMaps: 'Maps ↗',
+  photosShowPinOnMap: 'Show on Map',
+  photosComposerTitle: 'Pin Photo to Map',
+  photosExifGpsFound: 'Photo GPS location detected',
+  photosPinnedOnMap: 'Pinned manually on map',
+  photosNoExifFallback: 'No photo GPS — choose a park or drop a pin',
+  photosChoosePinSpotLabel: 'Where Was This Taken?',
+  photosDropPinBtn: 'Tap on Map',
+  photosPlaceLabel: 'Spot Name',
+  photosPlacePlaceholder: 'e.g. Brighton Dog Beach',
+  photosCaptionLabel: 'Memory Caption (Optional)',
+  photosCaptionPlaceholder: 'e.g. Pudding loved the golden-hour breeze!',
+  photosDateLabel: 'Date Taken',
+  photosSaveToMapBtn: 'Pin to Photo Map',
+  photosDeleteBtn: 'Delete Photo',
+  photosConfirmDeleteBtn: 'Tap Again to Delete',
 };
 
 const ZH_STRINGS: AppStrings = {
@@ -854,6 +914,7 @@ const ZH_STRINGS: AppStrings = {
   iphoneFrameToggle: '手机视图',
   tabWalkNow: '去遛狗',
   tabExploreMap: '地图',
+  tabPhotoMap: '足迹相册',
   errorTitle: 'PawCast 出了点小问题',
   errorSub: '点击下方按钮即可恢复实时天气和收藏的公园。',
   errorReload: '重新加载',
@@ -1257,6 +1318,34 @@ const ZH_STRINGS: AppStrings = {
   walkLoggedByPrefix: '记录人',
   pinnedAreasHeader: '常用片区',
   pinThisAreaShort: '固定当前',
+
+  photosCountSummary: (photos, places) => `${photos} 张 · ${places} 处`,
+  photosViewMap: '地图',
+  photosViewGrid: '相册',
+  photosAddBtn: '+ 传照片',
+  photosAddFirstBtn: '+ 上传第一张遛狗照',
+  photosFitAllBtn: '全部',
+  photosEmptyTitle: '你的遛狗足迹相册',
+  photosEmptySub:
+    '把遛狗时拍的照片钉在拍摄地点上，浏览地图就能重温每一处回忆。支持自动读取原图拍摄定位，也可手动点选公园或地图位置。',
+  photosTapMapPrompt: '点击地图任意位置即可放置照片图钉',
+  photosViewFullBtn: '查看大图',
+  photosOpenSpotMaps: '去这里 ↗',
+  photosShowPinOnMap: '在地图定位',
+  photosComposerTitle: '添加足迹照片',
+  photosExifGpsFound: '已自动识别照片拍摄位置',
+  photosPinnedOnMap: '已在地图上选定位置',
+  photosNoExifFallback: '照片未含定位，请选择公园或在地图点选',
+  photosChoosePinSpotLabel: '拍摄地点',
+  photosDropPinBtn: '地图点选',
+  photosPlaceLabel: '地点名称',
+  photosPlacePlaceholder: '例如：世纪公园草坪 / Brighton 狗狗海滩',
+  photosCaptionLabel: '回忆配文（选填）',
+  photosCaptionPlaceholder: '例如：布丁今天在树荫下玩得超开心！',
+  photosDateLabel: '拍摄日期',
+  photosSaveToMapBtn: '钉在足迹地图上',
+  photosDeleteBtn: '删除照片',
+  photosConfirmDeleteBtn: '再次点击确认删除',
 };
 
 const ZH_BREED_LABELS: Record<string, string> = {

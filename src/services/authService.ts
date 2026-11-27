@@ -14,9 +14,11 @@ import {
 import {
   arrayRemove,
   arrayUnion,
+  collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
 } from 'firebase/firestore/lite';
@@ -31,6 +33,7 @@ import {
   LocationPoint,
   MemberPreferences,
   MemberProfile,
+  PhotoMemory,
   UnitSystem,
   WalkLogEntry,
 } from '../types/walk';
@@ -322,6 +325,14 @@ export async function deleteCurrentAccount(
     if (db) {
       const ref = doc(db, 'users', user.uid, 'pawcast', 'profile');
       await deleteDoc(ref).catch(() => {});
+      const photosSnap = await getDocs(
+        collection(db, 'users', user.uid, 'photoMemories')
+      ).catch(() => null);
+      if (photosSnap) {
+        await Promise.all(
+          photosSnap.docs.map((d) => deleteDoc(d.ref).catch(() => {}))
+        );
+      }
     }
 
     await deleteUser(user);
@@ -643,6 +654,76 @@ export async function leaveHouseholdShare(
         updatedAtMs: Date.now(),
       });
     }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Loads the signed-in user's per-spot photo memories from `users/{uid}/photoMemories`.
+ */
+export async function loadCloudPhotoMemories(
+  uid: string
+): Promise<Array<Record<string, unknown>>> {
+  const safeUid = sanitizeText(uid, 128);
+  if (!safeUid) return [];
+  const db = getFirebaseDb();
+  if (!db) return [];
+  try {
+    const snap = await getDocs(collection(db, 'users', safeUid, 'photoMemories'));
+    return snap.docs.map((d) => d.data() as Record<string, unknown>);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Saves one sanitized photo memory document (`users/{uid}/photoMemories/{id}`)
+ * so each photo stays well under Firestore's 1 MiB per-document limit.
+ */
+export async function saveCloudPhotoMemory(
+  uid: string,
+  memory: PhotoMemory
+): Promise<boolean> {
+  const safeUid = sanitizeText(uid, 128);
+  const safeId = sanitizeText(memory.id, 48);
+  const safeThumb = sanitizeAvatarDataUri(memory.thumbnailUri, 48_000);
+  const safePhoto = sanitizeAvatarDataUri(memory.photoUri, 170_000);
+  if (!safeUid || !safeId || !safeThumb || !safePhoto) return false;
+  const db = getFirebaseDb();
+  if (!db) return false;
+  try {
+    await setDoc(doc(db, 'users', safeUid, 'photoMemories', safeId), {
+      id: safeId,
+      thumbnailUri: safeThumb,
+      photoUri: safePhoto,
+      latitude: memory.latitude,
+      longitude: memory.longitude,
+      placeName: sanitizeText(memory.placeName, 60) || 'Walk Memory',
+      suburbLabel: sanitizeText(memory.suburbLabel, 50),
+      caption: sanitizeText(memory.caption, 120),
+      takenDateIso: memory.takenDateIso,
+      dogNames: memory.dogNames.slice(0, 5),
+      createdAtMs: Math.round(memory.createdAtMs),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteCloudPhotoMemory(
+  uid: string,
+  photoId: string
+): Promise<boolean> {
+  const safeUid = sanitizeText(uid, 128);
+  const safeId = sanitizeText(photoId, 48);
+  if (!safeUid || !safeId) return false;
+  const db = getFirebaseDb();
+  if (!db) return false;
+  try {
+    await deleteDoc(doc(db, 'users', safeUid, 'photoMemories', safeId));
     return true;
   } catch {
     return false;

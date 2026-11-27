@@ -12,6 +12,7 @@ import {
   LoopDurationMinutes,
   MemberPreferences,
   MemberProfile,
+  PhotoMemory,
   PinnedLocation,
   PlaceCategory,
   PreferredMapsApp,
@@ -23,6 +24,7 @@ import {
   escapeCsvCell,
   isValidCoordinate,
   sanitizeAvatarDataUri,
+  sanitizeDogName,
   sanitizeIsoDate,
   sanitizeText,
 } from '../utils/validation';
@@ -31,6 +33,8 @@ export const MAX_PINNED_LOCATIONS = 5;
 export const MAX_CUSTOM_SPOTS = 20;
 export const MAX_CARE_REMINDERS = 12;
 export const MAX_GEAR_ITEMS = 15;
+export const MAX_LOCAL_PHOTO_MEMORIES = 24;
+export const MAX_CLOUD_PHOTO_MEMORIES = 60;
 
 export const DEFAULT_MAP_FILTERS: DefaultMapFilters = {
   beachesOnly: false,
@@ -457,6 +461,66 @@ export function buildWalkLogsCsv(logs: WalkLogEntry[]): string {
   return [header, ...rows]
     .map((cols) => cols.map(escapeCsvCell).join(','))
     .join('\n');
+}
+
+export function parsePhotoMemory(raw: unknown): PhotoMemory | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const rec = raw as Record<string, unknown>;
+  const id = sanitizeText(rec.id, 48);
+  const thumbnailUri = sanitizeAvatarDataUri(rec.thumbnailUri, 48_000);
+  const photoUri = sanitizeAvatarDataUri(rec.photoUri, 170_000);
+  if (
+    !id ||
+    !thumbnailUri ||
+    !photoUri ||
+    !isValidCoordinate(rec.latitude, rec.longitude)
+  ) {
+    return null;
+  }
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const takenDateIso = sanitizeIsoDate(rec.takenDateIso) || todayIso;
+  const dogNames = Array.isArray(rec.dogNames)
+    ? rec.dogNames
+        .filter((x): x is string => typeof x === 'string')
+        .map((x) => sanitizeDogName(x))
+        .filter(Boolean)
+        .slice(0, 5)
+    : ['Pudding'];
+  const createdAtMs =
+    typeof rec.createdAtMs === 'number' && Number.isFinite(rec.createdAtMs)
+      ? Math.round(rec.createdAtMs)
+      : Date.now();
+  return {
+    id,
+    thumbnailUri,
+    photoUri,
+    latitude: rec.latitude as number,
+    longitude: rec.longitude as number,
+    placeName: sanitizeText(rec.placeName, 60) || 'Walk Memory',
+    suburbLabel: sanitizeText(rec.suburbLabel, 50) || '',
+    caption: sanitizeText(rec.caption, 120),
+    takenDateIso,
+    dogNames: dogNames.length > 0 ? dogNames : ['Pudding'],
+    createdAtMs,
+  };
+}
+
+export function parsePhotoMemories(
+  raw: unknown,
+  limit = MAX_CLOUD_PHOTO_MEMORIES
+): PhotoMemory[] {
+  if (!Array.isArray(raw)) return [];
+  const clean: PhotoMemory[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (clean.length >= limit) break;
+    const parsed = parsePhotoMemory(item);
+    if (parsed && !seen.has(parsed.id)) {
+      seen.add(parsed.id);
+      clean.push(parsed);
+    }
+  }
+  return clean.sort((a, b) => b.createdAtMs - a.createdAtMs);
 }
 
 export function buildWalkLogsJson(logs: WalkLogEntry[]): string {

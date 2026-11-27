@@ -18,8 +18,10 @@ import {
   DEFAULT_MEMBER_PROFILE,
   getDefaultGearChecklist,
   MAX_CARE_REMINDERS,
+  MAX_CLOUD_PHOTO_MEMORIES,
   MAX_CUSTOM_SPOTS,
   MAX_GEAR_ITEMS,
+  MAX_LOCAL_PHOTO_MEMORIES,
   MAX_PINNED_LOCATIONS,
   parseCareReminders,
   parseCustomWalkSpots,
@@ -27,6 +29,7 @@ import {
   parseGearChecklist,
   parseMemberPreferences,
   parseMemberProfile,
+  parsePhotoMemories,
   WALK_LOG_TAG_KEYS,
 } from '../constants/memberDefaults';
 import {
@@ -61,6 +64,7 @@ import {
   LocationPoint,
   MemberPreferences,
   MemberProfile,
+  PhotoMemory,
   PlaceCategory,
   ScoredHour,
   ScoredPlace,
@@ -94,6 +98,7 @@ import { useAuth } from './AuthContext';
  */
 const STORAGE_KEY_PREFS = '@pawcast/multi-region/v2.2';
 const STORAGE_KEY_OFFLINE_FORECAST = '@pawcast/offline-forecast/v1';
+const STORAGE_KEY_PHOTO_MEMORIES = '@pawcast/photo-memories/v1';
 const OFFLINE_CACHE_MAX_AGE_MS = 18 * 60 * 60 * 1000;
 const OFFLINE_CACHE_MAX_ITEMS = 3;
 const MAX_HOUSEHOLD_DOGS = 5;
@@ -200,6 +205,20 @@ interface WalkPlannerContextValue {
   startHouseholdShare: () => Promise<{ ok: boolean; inviteToken?: string }>;
   joinHouseholdByCode: (token: string) => Promise<boolean>;
   leaveCurrentHousehold: () => Promise<boolean>;
+
+  photoMemories: PhotoMemory[];
+  addPhotoMemory: (input: {
+    thumbnailUri: string;
+    photoUri: string;
+    latitude: number;
+    longitude: number;
+    placeName: string;
+    suburbLabel?: string;
+    caption?: string;
+    takenDateIso?: string;
+    dogNames?: string[];
+  }) => PhotoMemory | null;
+  deletePhotoMemory: (photoId: string) => void;
 
   pendingDeepLinkSpotId: string | null;
   clearPendingDeepLinkSpot: () => void;
@@ -500,6 +519,7 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     getDefaultGearChecklist('en')
   );
   const [householdId, setHouseholdId] = useState<string | null>(null);
+  const [photoMemories, setPhotoMemories] = useState<PhotoMemory[]>([]);
   const [pendingDeepLinkSpotId, setPendingDeepLinkSpotId] = useState<
     string | null
   >(null);
@@ -508,6 +528,9 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     pullCloudProfile,
     pushCloudProfile,
+    pullCloudPhotoMemories,
+    pushCloudPhotoMemory,
+    removeCloudPhotoMemory,
     updateAuthDisplayName,
     createHousehold,
     joinHousehold,
@@ -517,6 +540,8 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
   } = useAuth();
   const pulledUidRef = useRef<string | null>(null);
   const suppressNextCloudPushRef = useRef(false);
+  const photoMemoriesRef = useRef<PhotoMemory[]>(photoMemories);
+  photoMemoriesRef.current = photoMemories;
 
   const [forecast, setForecast] = useState<ForecastBundle | null>(null);
   const [isOfflineForecast, setIsOfflineForecast] = useState(false);
@@ -667,6 +692,18 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
 
+        // Hydrate local photo memories collection
+        const savedPhotosRaw = await AsyncStorage.getItem(
+          STORAGE_KEY_PHOTO_MEMORIES
+        );
+        if (savedPhotosRaw && active) {
+          const parsedPhotos = parsePhotoMemories(
+            JSON.parse(savedPhotosRaw),
+            MAX_CLOUD_PHOTO_MEMORIES
+          );
+          setPhotoMemories(parsedPhotos);
+        }
+
         // Apply allow-listed web URL deep link (#spot=<id> / #suburb=<id> / #city=<name>)
         const deepLink = readInitialWebDeepLink();
         if (deepLink && active) {
@@ -748,6 +785,15 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     gearChecklist,
     householdId,
   ]);
+
+  // Persist photo memories locally (bounded to stay safely inside browser AsyncStorage quota)
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(
+      STORAGE_KEY_PHOTO_MEMORIES,
+      JSON.stringify(photoMemories.slice(0, MAX_LOCAL_PHOTO_MEMORIES))
+    ).catch(() => {});
+  }, [hydrated, photoMemories]);
 
   const latestSyncStateRef = useRef({
     units,
@@ -989,6 +1035,24 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
           memberProfile: mergedProfile,
         });
       }
+
+      // Sync photo memories subcollection (`users/{uid}/photoMemories`)
+      const cloudPhotosRaw = await pullCloudPhotoMemories();
+      if (!active || pulledUidRef.current !== targetUid) return;
+      const cloudPhotos = parsePhotoMemories(
+        cloudPhotosRaw,
+        MAX_CLOUD_PHOTO_MEMORIES
+      );
+      const localPhotos = photoMemoriesRef.current;
+      const cloudIds = new Set(cloudPhotos.map((p) => p.id));
+      const localOnly = localPhotos.filter((p) => !cloudIds.has(p.id));
+      if (localOnly.length > 0) {
+        Promise.all(localOnly.map((p) => pushCloudPhotoMemory(p))).catch(() => {});
+      }
+      const mergedPhotos = [...cloudPhotos, ...localOnly]
+        .sort((a, b) => b.createdAtMs - a.createdAtMs)
+        .slice(0, MAX_CLOUD_PHOTO_MEMORIES);
+      setPhotoMemories(mergedPhotos);
     })();
 
     return () => {
@@ -1000,6 +1064,8 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     user?.displayName,
     pullCloudProfile,
     pushCloudProfile,
+    pullCloudPhotoMemories,
+    pushCloudPhotoMemory,
     pullHousehold,
     applySharedHouseholdData,
   ]);
@@ -1630,6 +1696,78 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     return ok;
   }, [householdId, leaveHousehold]);
 
+  const addPhotoMemory = useCallback(
+    (input: {
+      thumbnailUri: string;
+      photoUri: string;
+      latitude: number;
+      longitude: number;
+      placeName: string;
+      suburbLabel?: string;
+      caption?: string;
+      takenDateIso?: string;
+      dogNames?: string[];
+    }): PhotoMemory | null => {
+      const safeThumb = sanitizeAvatarDataUri(input.thumbnailUri, 48_000);
+      const safePhoto = sanitizeAvatarDataUri(input.photoUri, 170_000);
+      if (
+        !safeThumb ||
+        !safePhoto ||
+        !isValidCoordinate(input.latitude, input.longitude)
+      ) {
+        return null;
+      }
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const safeDate = sanitizeIsoDate(input.takenDateIso) || todayIso;
+      const safeDogNames =
+        input.dogNames && input.dogNames.length > 0
+          ? input.dogNames
+              .map((d) => sanitizeDogName(d))
+              .filter(Boolean)
+              .slice(0, 5)
+          : activeDogs.map((d) => d.name);
+
+      const memory: PhotoMemory = {
+        id: `photo-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`,
+        thumbnailUri: safeThumb,
+        photoUri: safePhoto,
+        latitude: Math.round(input.latitude * 1_000_000) / 1_000_000,
+        longitude: Math.round(input.longitude * 1_000_000) / 1_000_000,
+        placeName:
+          sanitizeText(input.placeName, 60) ||
+          location.name.split(' · ').pop() ||
+          'Walk Spot',
+        suburbLabel: sanitizeText(input.suburbLabel ?? location.name, 50),
+        caption: sanitizeText(input.caption, 120),
+        takenDateIso: safeDate,
+        dogNames:
+          safeDogNames.length > 0 ? safeDogNames : [DEFAULT_DOG_PROFILE.name],
+        createdAtMs: Date.now(),
+      };
+
+      setPhotoMemories((prev) =>
+        [memory, ...prev].slice(0, MAX_CLOUD_PHOTO_MEMORIES)
+      );
+      if (user?.uid) {
+        pushCloudPhotoMemory(memory).catch(() => {});
+      }
+      return memory;
+    },
+    [activeDogs, location.name, user?.uid, pushCloudPhotoMemory]
+  );
+
+  const deletePhotoMemory = useCallback(
+    (photoId: string) => {
+      const safeId = sanitizeText(photoId, 48);
+      if (!safeId) return;
+      setPhotoMemories((prev) => prev.filter((p) => p.id !== safeId));
+      if (user?.uid) {
+        removeCloudPhotoMemory(safeId).catch(() => {});
+      }
+    },
+    [user?.uid, removeCloudPhotoMemory]
+  );
+
   const clearPendingDeepLinkSpot = useCallback(() => {
     setPendingDeepLinkSpotId(null);
   }, []);
@@ -1944,6 +2082,9 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       startHouseholdShare,
       joinHouseholdByCode,
       leaveCurrentHousehold,
+      photoMemories,
+      addPhotoMemory,
+      deletePhotoMemory,
       pendingDeepLinkSpotId,
       clearPendingDeepLinkSpot,
       isLoading,
@@ -2016,6 +2157,9 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       startHouseholdShare,
       joinHouseholdByCode,
       leaveCurrentHousehold,
+      photoMemories,
+      addPhotoMemory,
+      deletePhotoMemory,
       pendingDeepLinkSpotId,
       clearPendingDeepLinkSpot,
       isLoading,

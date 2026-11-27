@@ -77,6 +77,7 @@ const deepLinks = loadTsModule('src/utils/deepLinks.ts');
 const translations = loadTsModule('src/i18n/translations.ts');
 const spotGuide = loadTsModule('src/utils/spotGuide.ts');
 const memberDefaults = loadTsModule('src/constants/memberDefaults.ts');
+const photoMemoryPicker = loadTsModule('src/utils/photoMemoryPicker.ts');
 
 let passed = 0;
 let failed = 0;
@@ -509,6 +510,106 @@ test('Dog temperament quirks (hatesRain, customMaxTempC, quietMode) adjust scori
     walkScoring.scoreWeatherHour(warmHour, 0, lowCapDog).walkScore <
       walkScoring.scoreWeatherHour(warmHour, 0, highCapDog).walkScore
   );
+});
+
+// 11. Photo Memory Map: EXIF GPS Parser & Photo Sanitization
+test('EXIF GPS parser extracts JPEG coordinates & date accurately and rejects malformed buffers safely', () => {
+  // Build a minimal valid little-endian JPEG APP1 Exif payload: 37°48'0" S, 144°58'48" E (-37.8, 144.98) + 2026:11:27
+  const tiff = new Uint8Array(220);
+  const w16 = (off, v) => {
+    tiff[off] = v & 0xff;
+    tiff[off + 1] = (v >> 8) & 0xff;
+  };
+  const w32 = (off, v) => {
+    tiff[off] = v & 0xff;
+    tiff[off + 1] = (v >> 8) & 0xff;
+    tiff[off + 2] = (v >> 16) & 0xff;
+    tiff[off + 3] = (v >>> 24) & 0xff;
+  };
+  // TIFF header: "II", 42, IFD0 at offset 8
+  tiff[0] = 0x49; tiff[1] = 0x49;
+  w16(2, 42);
+  w32(4, 8);
+  // IFD0 at 8: 2 entries -> DateTime (0x0132) & GPS IFD pointer (0x8825)
+  w16(8, 2);
+  // Entry 0: DateTime (0x0132), ASCII (2), count 20, offset 40
+  w16(10, 0x0132); w16(12, 2); w32(14, 20); w32(18, 40);
+  // Entry 1: GPS IFD (0x8825), LONG (4), count 1, offset 64
+  w16(22, 0x8825); w16(24, 4); w32(26, 1); w32(30, 64);
+  const dateStr = '2026:11:27 09:15:00\0';
+  for (let i = 0; i < dateStr.length; i++) tiff[40 + i] = dateStr.charCodeAt(i);
+
+  // GPS IFD at 64: 4 entries
+  w16(64, 4);
+  // 0x0001 GPSLatitudeRef = 'S'
+  w16(66, 0x0001); w16(68, 2); w32(70, 2); tiff[74] = 'S'.charCodeAt(0);
+  // 0x0002 GPSLatitude at offset 120 -> 37/1, 48/1, 0/1 = 37.8
+  w16(78, 0x0002); w16(80, 5); w32(82, 3); w32(86, 120);
+  // 0x0003 GPSLongitudeRef = 'E'
+  w16(90, 0x0003); w16(92, 2); w32(94, 2); tiff[98] = 'E'.charCodeAt(0);
+  // 0x0004 GPSLongitude at offset 150 -> 144/1, 58/1, 48/1 = 144.98
+  w16(102, 0x0004); w16(104, 5); w32(106, 3); w32(110, 150);
+
+  w32(120, 37); w32(124, 1); w32(128, 48); w32(132, 1); w32(136, 0); w32(140, 1);
+  w32(150, 144); w32(154, 1); w32(158, 58); w32(162, 1); w32(166, 48); w32(170, 1);
+
+  const segLen = 2 + 6 + tiff.length;
+  const jpeg = new Uint8Array(2 + 2 + segLen + 2);
+  jpeg[0] = 0xff; jpeg[1] = 0xd8; // SOI
+  jpeg[2] = 0xff; jpeg[3] = 0xe1; // APP1
+  jpeg[4] = (segLen >> 8) & 0xff; jpeg[5] = segLen & 0xff;
+  const exifHdr = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
+  jpeg.set(exifHdr, 6);
+  jpeg.set(tiff, 12);
+  jpeg[jpeg.length - 2] = 0xff; jpeg[jpeg.length - 1] = 0xd9; // EOI
+
+  const meta = photoMemoryPicker.extractJpegExifMeta(jpeg);
+  assert.equal(meta.latitude, -37.8);
+  assert.equal(meta.longitude, 144.98);
+  assert.equal(meta.takenDateIso, '2026-11-27');
+
+  // Malformed / non-JPEG bytes must never throw
+  const bad = photoMemoryPicker.extractJpegExifMeta(new Uint8Array([0x00, 0x01, 0xff, 0xe1, 0xff, 0xff]));
+  assert.equal(bad.latitude, null);
+  assert.equal(bad.longitude, null);
+});
+
+test('Photo memory parser enforces raster Data URIs, coordinate bounds, and text sanitization', () => {
+  const parsed = memberDefaults.parsePhotoMemories([
+    {
+      id: 'bad-svg',
+      thumbnailUri: 'data:image/svg+xml;base64,PHN2Zz4=',
+      photoUri: 'data:image/jpeg;base64,/9j/4AAQ==',
+      latitude: -37.8,
+      longitude: 144.98,
+      placeName: 'Evil',
+      takenDateIso: '2026-11-27',
+    },
+    {
+      id: 'bad-coords',
+      thumbnailUri: 'data:image/jpeg;base64,/9j/4AAQ==',
+      photoUri: 'data:image/jpeg;base64,/9j/4AAQ==',
+      latitude: 999,
+      longitude: 144.98,
+      placeName: 'Mars',
+      takenDateIso: '2026-11-27',
+    },
+    {
+      id: 'good-1',
+      thumbnailUri: 'data:image/jpeg;base64,/9j/4AAQ==',
+      photoUri: 'data:image/jpeg;base64,/9j/4AAQ==',
+      latitude: -37.9082,
+      longitude: 144.9862,
+      placeName: '<script>Brighton</script>',
+      caption: 'Sunny walk!',
+      takenDateIso: '2026-11-27',
+      dogNames: ['Pudding'],
+      createdAtMs: 1764220000000,
+    },
+  ]);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].id, 'good-1');
+  assert.equal(parsed[0].placeName, 'script Brighton /script');
 });
 
 console.log(`\nUnit Test Results: ${passed} passed, ${failed} failed.`);

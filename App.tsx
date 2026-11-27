@@ -16,6 +16,7 @@ import { DogAvatar } from './src/components/DogAvatar';
 import { DogProfileScreen } from './src/components/DogProfileScreen';
 import { ExploreMapScreen } from './src/components/ExploreMapScreen';
 import { LocationModal } from './src/components/LocationModal';
+import { PhotoMapScreen } from './src/components/PhotoMapScreen';
 import { UiIcon } from './src/components/UiIcons';
 import { WalkNowScreen } from './src/components/WalkNowScreen';
 import { AuthProvider } from './src/context/AuthContext';
@@ -28,7 +29,7 @@ import { getStrings } from './src/i18n/translations';
 import { COLORS, ELEVATION, UI_FONT_FAMILY } from './src/theme/colors';
 import { LoopDurationMinutes } from './src/types/walk';
 
-type TabKey = 'walk' | 'map' | 'dog';
+type TabKey = 'walk' | 'map' | 'photos' | 'dog';
 
 const MainShell: React.FC = () => {
   const {
@@ -204,6 +205,8 @@ const MainShell: React.FC = () => {
           />
         ) : null}
 
+        {activeTab === 'photos' ? <PhotoMapScreen /> : null}
+
         {activeTab === 'dog' ? (
           <DogProfileScreen
             onShowSpotOnMap={(placeId) => {
@@ -284,6 +287,40 @@ const MainShell: React.FC = () => {
             ]}
           >
             {t.tabExploreMap}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setActiveTab('photos')}
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'photos' }}
+          style={({ pressed }) => [
+            styles.tabItem,
+            pressed && styles.pressed,
+          ]}
+        >
+          <View
+            style={[
+              styles.tabIconCapsule,
+              activeTab === 'photos' && styles.tabIconCapsuleActive,
+            ]}
+          >
+            <UiIcon
+              name="camera"
+              size={19}
+              color={
+                activeTab === 'photos' ? COLORS.brandDark : COLORS.textSecondary
+              }
+            />
+          </View>
+          <Text
+            style={[
+              styles.tabLabel,
+              activeTab === 'photos' && styles.tabLabelActive,
+            ]}
+            numberOfLines={1}
+          >
+            {t.tabPhotoMap}
           </Text>
         </Pressable>
 

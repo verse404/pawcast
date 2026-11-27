@@ -74,12 +74,15 @@ export function detectSafeImageMimeFromBytes(
  * Validates that a custom dog profile image URI is a bounded, allow-listed
  * raster Data URI (`image/jpeg`, `image/png`, or `image/webp`).
  */
-export function sanitizeAvatarDataUri(raw: unknown): string | null {
+export function sanitizeAvatarDataUri(
+  raw: unknown,
+  maxLength = MAX_AVATAR_DATA_URI_LENGTH
+): string | null {
   if (typeof raw !== 'string') {
     return null;
   }
   const trimmed = raw.trim();
-  if (!trimmed || trimmed.length > MAX_AVATAR_DATA_URI_LENGTH) {
+  if (!trimmed || trimmed.length > maxLength) {
     return null;
   }
   if (!SAFE_RASTER_DATA_URI_RE.test(trimmed)) {
