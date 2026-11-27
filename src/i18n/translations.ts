@@ -416,9 +416,6 @@ export interface AppStrings {
   walkLoggedByPrefix: string;
   pinnedAreasHeader: string;
   pinThisAreaShort: string;
-  headerSignInShort: string;
-  homeSignInBannerTitle: string;
-  homeSignInBannerCta: string;
 }
 
 const EN_STRINGS: AppStrings = {
@@ -849,9 +846,6 @@ const EN_STRINGS: AppStrings = {
   walkLoggedByPrefix: 'by',
   pinnedAreasHeader: 'Pinned Areas',
   pinThisAreaShort: 'Pin Current',
-  headerSignInShort: 'Sign In',
-  homeSignInBannerTitle: 'Sync your dogs, saved parks & walk logs across devices',
-  homeSignInBannerCta: 'Sign In',
 };
 
 const ZH_STRINGS: AppStrings = {
@@ -1263,9 +1257,6 @@ const ZH_STRINGS: AppStrings = {
   walkLoggedByPrefix: '记录人',
   pinnedAreasHeader: '常用片区',
   pinThisAreaShort: '固定当前',
-  headerSignInShort: '登录',
-  homeSignInBannerTitle: '邮箱登录，跨设备同步狗狗资料、收藏公园与遛狗记录',
-  homeSignInBannerCta: '去登录',
 };
 
 const ZH_BREED_LABELS: Record<string, string> = {

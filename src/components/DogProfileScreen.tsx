@@ -487,277 +487,7 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* 0. Member Account & Cloud Sync (Top of Profile Tab for Instant Visibility) */}
-        <View style={[styles.infoCard, ELEVATION.card]}>
-          <View style={styles.cardHeaderRow}>
-            <View style={styles.cardTitleGroup}>
-              <View style={styles.cardIconTile}>
-                <UiIcon name="cloud" size={16} color={COLORS.brand} />
-              </View>
-              <Text style={styles.cardTitle}>{t.accountCardTitle}</Text>
-            </View>
-            <View
-              style={[
-                styles.accountStatusPill,
-                user
-                  ? syncStatus === 'error'
-                    ? styles.accountStatusPillWarn
-                    : styles.accountStatusPillActive
-                  : !isFirebaseConfigured
-                    ? styles.accountStatusPillWarn
-                    : null,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.accountStatusPillText,
-                  user
-                    ? syncStatus === 'error'
-                      ? styles.accountStatusPillTextWarn
-                      : styles.accountStatusPillTextActive
-                    : !isFirebaseConfigured
-                      ? styles.accountStatusPillTextWarn
-                      : null,
-                ]}
-              >
-                {user
-                  ? syncStatus === 'syncing'
-                    ? t.accountSyncSyncing
-                    : syncStatus === 'synced'
-                      ? t.accountSyncSynced
-                      : syncStatus === 'error'
-                        ? t.accountSyncError
-                        : t.accountSyncIdle
-                  : isFirebaseConfigured
-                    ? t.accountGuestBadge
-                    : t.accountSetupBadge}
-              </Text>
-            </View>
-          </View>
-
-          {/* Member Identity Row (Display Name + Uploaded Photo) */}
-          <Pressable
-            onPress={() => {
-              setMemberHubTab('profile');
-              setMemberHubOpen(true);
-            }}
-            style={({ pressed }) => [
-              styles.memberIdentityBanner,
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.memberMiniAvatar}>
-              {memberProfile.avatarUri ? (
-                <Image
-                  source={{ uri: memberProfile.avatarUri }}
-                  style={styles.memberMiniAvatarImg}
-                />
-              ) : (
-                <Text style={styles.memberMiniAvatarInitial}>
-                  {(memberProfile.displayName.trim() || user?.displayName || 'P')
-                    .slice(0, 1)
-                    .toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={styles.memberIdentityCol}>
-              <Text style={styles.memberIdentityName} numberOfLines={1}>
-                {memberProfile.displayName.trim() ||
-                  user?.displayName ||
-                  t.accountGuestName}
-              </Text>
-              <Text style={styles.memberIdentityMeta} numberOfLines={1}>
-                {t.accountOpenHubBtn}
-              </Text>
-            </View>
-            <UiIcon name="chevronRight" size={16} color={COLORS.brandDark} />
-          </Pressable>
-
-          {upcomingReminder ? (
-            <Pressable
-              onPress={() => {
-                setMemberHubTab('care');
-                setMemberHubOpen(true);
-              }}
-              style={styles.reminderCalloutPill}
-            >
-              <UiIcon name="clock" size={14} color={COLORS.cautionText} />
-              <Text style={styles.reminderCalloutText} numberOfLines={1}>
-                {upcomingReminder.reminder.title} ·{' '}
-                {upcomingReminder.days < 0
-                  ? t.memberReminderOverdue
-                  : upcomingReminder.days === 0
-                    ? t.memberReminderDueToday
-                    : t.memberReminderDueInDays(
-                        formatInteger(upcomingReminder.days, loc)
-                      )}
-              </Text>
-            </Pressable>
-          ) : null}
-
-          {user ? (
-            <View style={styles.accountSignedInBody}>
-              <View style={styles.accountEmailRow}>
-                <UiIcon name="mail" size={15} color={COLORS.brandDark} />
-                <Text style={styles.accountEmailText} numberOfLines={1}>
-                  {user.maskedEmail}
-                </Text>
-                <View
-                  style={[
-                    styles.verifyPill,
-                    user.emailVerified
-                      ? styles.verifyPillOk
-                      : styles.verifyPillPending,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.verifyPillText,
-                      user.emailVerified
-                        ? styles.verifyPillTextOk
-                        : styles.verifyPillTextPending,
-                    ]}
-                  >
-                    {user.emailVerified
-                      ? t.accountVerifiedBadge
-                      : t.accountUnverifiedBadge}
-                  </Text>
-                </View>
-              </View>
-
-              {verifyNotice ? (
-                <Text style={styles.verifyNoticeText}>{verifyNotice}</Text>
-              ) : null}
-
-              <View style={styles.accountActionsRow}>
-                <Pressable
-                  onPress={() => {
-                    syncCloudNow().catch(() => {});
-                  }}
-                  disabled={syncStatus === 'syncing'}
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.accountActionPillPrimary,
-                    syncStatus === 'syncing' && styles.btnDisabled,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.accountActionPillPrimaryText}>
-                    {syncStatus === 'syncing'
-                      ? t.accountSyncSyncing
-                      : t.accountSyncNowBtn}
-                  </Text>
-                </Pressable>
-
-                {!user.emailVerified ? (
-                  <Pressable
-                    onPress={async () => {
-                      if (isSendingVerify) return;
-                      setIsSendingVerify(true);
-                      setVerifyNotice(null);
-                      try {
-                        const res = await resendVerification();
-                        setVerifyNotice(
-                          res.ok
-                            ? t.accountVerifySent
-                            : getAuthErrorMessage(res.errorKey, language)
-                        );
-                      } finally {
-                        setIsSendingVerify(false);
-                      }
-                    }}
-                    disabled={isSendingVerify}
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.accountActionPill,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text style={styles.accountActionPillText}>
-                      {t.accountResendVerify}
-                    </Text>
-                  </Pressable>
-                ) : null}
-
-                <Pressable
-                  onPress={async () => {
-                    if (isSigningOut) return;
-                    setIsSigningOut(true);
-                    try {
-                      await signOut();
-                    } finally {
-                      setIsSigningOut(false);
-                    }
-                  }}
-                  disabled={isSigningOut}
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.accountActionPill,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.accountActionPillText}>
-                    {t.accountSignOutBtn}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => {
-                    setAuthModalMode('delete');
-                    setAuthModalOpen(true);
-                  }}
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.accountDeletePill,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.accountDeletePillText}>
-                    {t.accountDeleteBtn}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.emptySavedBox}>
-              <Text style={styles.emptySavedText}>
-                {isFirebaseConfigured
-                  ? t.accountGuestSubtitle
-                  : t.accountSetupNotice}
-              </Text>
-              <Pressable
-                onPress={() => {
-                  setAuthModalMode('signin');
-                  setAuthModalOpen(true);
-                }}
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.accountCtaBtn,
-                  !isFirebaseConfigured && styles.accountCtaBtnSubtle,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <UiIcon
-                  name={isFirebaseConfigured ? 'mail' : 'lock'}
-                  size={15}
-                  color={isFirebaseConfigured ? '#FFFFFF' : COLORS.brandDark}
-                />
-                <Text
-                  style={[
-                    styles.accountCtaBtnText,
-                    !isFirebaseConfigured && styles.accountCtaBtnTextSubtle,
-                  ]}
-                >
-                  {isFirebaseConfigured
-                    ? t.accountSignInCta
-                    : t.accountSetupGuideCta}
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-
-        {/* 1. Household Multi-Dog Pack Switcher */}
+        {/* 0. Household Multi-Dog Pack Switcher */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -1343,6 +1073,276 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
             </View>
           ) : (
             <Text style={styles.emptySavedText}>{t.emptyJournalHint}</Text>
+          )}
+        </View>
+
+        {/* 5. Optional Firebase Email Account & Cloud Sync */}
+        <View style={[styles.infoCard, ELEVATION.card]}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardTitleGroup}>
+              <View style={styles.cardIconTile}>
+                <UiIcon name="cloud" size={16} color={COLORS.brand} />
+              </View>
+              <Text style={styles.cardTitle}>{t.accountCardTitle}</Text>
+            </View>
+            <View
+              style={[
+                styles.accountStatusPill,
+                user
+                  ? syncStatus === 'error'
+                    ? styles.accountStatusPillWarn
+                    : styles.accountStatusPillActive
+                  : !isFirebaseConfigured
+                    ? styles.accountStatusPillWarn
+                    : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.accountStatusPillText,
+                  user
+                    ? syncStatus === 'error'
+                      ? styles.accountStatusPillTextWarn
+                      : styles.accountStatusPillTextActive
+                    : !isFirebaseConfigured
+                      ? styles.accountStatusPillTextWarn
+                      : null,
+                ]}
+              >
+                {user
+                  ? syncStatus === 'syncing'
+                    ? t.accountSyncSyncing
+                    : syncStatus === 'synced'
+                      ? t.accountSyncSynced
+                      : syncStatus === 'error'
+                        ? t.accountSyncError
+                        : t.accountSyncIdle
+                  : isFirebaseConfigured
+                    ? t.accountGuestBadge
+                    : t.accountSetupBadge}
+              </Text>
+            </View>
+          </View>
+
+          {/* Member Identity Row (Display Name + Uploaded Photo) */}
+          <Pressable
+            onPress={() => {
+              setMemberHubTab('profile');
+              setMemberHubOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.memberIdentityBanner,
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.memberMiniAvatar}>
+              {memberProfile.avatarUri ? (
+                <Image
+                  source={{ uri: memberProfile.avatarUri }}
+                  style={styles.memberMiniAvatarImg}
+                />
+              ) : (
+                <Text style={styles.memberMiniAvatarInitial}>
+                  {(memberProfile.displayName.trim() || user?.displayName || 'P')
+                    .slice(0, 1)
+                    .toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={styles.memberIdentityCol}>
+              <Text style={styles.memberIdentityName} numberOfLines={1}>
+                {memberProfile.displayName.trim() ||
+                  user?.displayName ||
+                  t.accountGuestName}
+              </Text>
+              <Text style={styles.memberIdentityMeta} numberOfLines={1}>
+                {t.accountOpenHubBtn}
+              </Text>
+            </View>
+            <UiIcon name="chevronRight" size={16} color={COLORS.brandDark} />
+          </Pressable>
+
+          {upcomingReminder ? (
+            <Pressable
+              onPress={() => {
+                setMemberHubTab('care');
+                setMemberHubOpen(true);
+              }}
+              style={styles.reminderCalloutPill}
+            >
+              <UiIcon name="clock" size={14} color={COLORS.cautionText} />
+              <Text style={styles.reminderCalloutText} numberOfLines={1}>
+                {upcomingReminder.reminder.title} ·{' '}
+                {upcomingReminder.days < 0
+                  ? t.memberReminderOverdue
+                  : upcomingReminder.days === 0
+                    ? t.memberReminderDueToday
+                    : t.memberReminderDueInDays(
+                        formatInteger(upcomingReminder.days, loc)
+                      )}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {user ? (
+            <View style={styles.accountSignedInBody}>
+              <View style={styles.accountEmailRow}>
+                <UiIcon name="mail" size={15} color={COLORS.brandDark} />
+                <Text style={styles.accountEmailText} numberOfLines={1}>
+                  {user.maskedEmail}
+                </Text>
+                <View
+                  style={[
+                    styles.verifyPill,
+                    user.emailVerified
+                      ? styles.verifyPillOk
+                      : styles.verifyPillPending,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.verifyPillText,
+                      user.emailVerified
+                        ? styles.verifyPillTextOk
+                        : styles.verifyPillTextPending,
+                    ]}
+                  >
+                    {user.emailVerified
+                      ? t.accountVerifiedBadge
+                      : t.accountUnverifiedBadge}
+                  </Text>
+                </View>
+              </View>
+
+              {verifyNotice ? (
+                <Text style={styles.verifyNoticeText}>{verifyNotice}</Text>
+              ) : null}
+
+              <View style={styles.accountActionsRow}>
+                <Pressable
+                  onPress={() => {
+                    syncCloudNow().catch(() => {});
+                  }}
+                  disabled={syncStatus === 'syncing'}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.accountActionPillPrimary,
+                    syncStatus === 'syncing' && styles.btnDisabled,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.accountActionPillPrimaryText}>
+                    {syncStatus === 'syncing'
+                      ? t.accountSyncSyncing
+                      : t.accountSyncNowBtn}
+                  </Text>
+                </Pressable>
+
+                {!user.emailVerified ? (
+                  <Pressable
+                    onPress={async () => {
+                      if (isSendingVerify) return;
+                      setIsSendingVerify(true);
+                      setVerifyNotice(null);
+                      try {
+                        const res = await resendVerification();
+                        setVerifyNotice(
+                          res.ok
+                            ? t.accountVerifySent
+                            : getAuthErrorMessage(res.errorKey, language)
+                        );
+                      } finally {
+                        setIsSendingVerify(false);
+                      }
+                    }}
+                    disabled={isSendingVerify}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.accountActionPill,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.accountActionPillText}>
+                      {t.accountResendVerify}
+                    </Text>
+                  </Pressable>
+                ) : null}
+
+                <Pressable
+                  onPress={async () => {
+                    if (isSigningOut) return;
+                    setIsSigningOut(true);
+                    try {
+                      await signOut();
+                    } finally {
+                      setIsSigningOut(false);
+                    }
+                  }}
+                  disabled={isSigningOut}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.accountActionPill,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.accountActionPillText}>
+                    {t.accountSignOutBtn}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    setAuthModalMode('delete');
+                    setAuthModalOpen(true);
+                  }}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.accountDeletePill,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.accountDeletePillText}>
+                    {t.accountDeleteBtn}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptySavedBox}>
+              <Text style={styles.emptySavedText}>
+                {isFirebaseConfigured
+                  ? t.accountGuestSubtitle
+                  : t.accountSetupNotice}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setAuthModalMode('signin');
+                  setAuthModalOpen(true);
+                }}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.accountCtaBtn,
+                  !isFirebaseConfigured && styles.accountCtaBtnSubtle,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <UiIcon
+                  name={isFirebaseConfigured ? 'mail' : 'lock'}
+                  size={15}
+                  color={isFirebaseConfigured ? '#FFFFFF' : COLORS.brandDark}
+                />
+                <Text
+                  style={[
+                    styles.accountCtaBtnText,
+                    !isFirebaseConfigured && styles.accountCtaBtnTextSubtle,
+                  ]}
+                >
+                  {isFirebaseConfigured
+                    ? t.accountSignInCta
+                    : t.accountSetupGuideCta}
+                </Text>
+              </Pressable>
+            </View>
           )}
         </View>
       </ScrollView>
