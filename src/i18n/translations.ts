@@ -1,4 +1,5 @@
 import { AppLanguage } from '../types/walk';
+import { AuthErrorKey } from '../utils/validation';
 
 /**
  * Centralized English & Simplified Mandarin (`zh`) UI copy catalog.
@@ -234,6 +235,65 @@ export interface AppStrings {
   zoomLabel: (scale: number) => string;
   showAllWalks: (count: string) => string;
   showFewerWalks: string;
+
+  // Firebase Auth & Cloud Sync
+  accountCardTitle: string;
+  accountGuestBadge: string;
+  accountSetupBadge: string;
+  accountGuestSubtitle: string;
+  accountSetupNotice: string;
+  accountSignInCta: string;
+  accountSetupGuideCta: string;
+  accountVerifiedBadge: string;
+  accountUnverifiedBadge: string;
+  accountResendVerify: string;
+  accountVerifySent: string;
+  accountSyncSynced: string;
+  accountSyncSyncing: string;
+  accountSyncError: string;
+  accountSyncIdle: string;
+  accountSyncNowBtn: string;
+  accountSignOutBtn: string;
+  accountDeleteBtn: string;
+  authTabSignIn: string;
+  authTabSignUp: string;
+  authTitleSignIn: string;
+  authTitleSignUp: string;
+  authTitleReset: string;
+  authTitleDelete: string;
+  authEmailLabel: string;
+  authEmailPlaceholder: string;
+  authPasswordLabel: string;
+  authCurrentPasswordLabel: string;
+  authPasswordPlaceholder: string;
+  authNewPasswordPlaceholder: string;
+  authShowPassword: string;
+  authHidePassword: string;
+  authStrengthHint: string;
+  authStrengthWeak: string;
+  authStrengthGood: string;
+  authStrengthStrong: string;
+  authForgotPasswordLink: string;
+  authBackToSignIn: string;
+  authSubmitSignIn: string;
+  authSubmitSignUp: string;
+  authSubmitReset: string;
+  authSubmitDelete: string;
+  authWorkingStatus: string;
+  authResetSentNotice: string;
+  authDeleteWarning: string;
+  authCancelBtn: string;
+  authPrivacyFootnote: string;
+  authSetupStepsTitle: string;
+  authSetupStepsBody: string;
+  authErrNotConfigured: string;
+  authErrInvalidEmail: string;
+  authErrWeakPassword: string;
+  authErrInvalidCredentials: string;
+  authErrTooManyRequests: string;
+  authErrRequiresRecentLogin: string;
+  authErrNetwork: string;
+  authErrGeneric: string;
 }
 
 const EN_STRINGS: AppStrings = {
@@ -459,6 +519,76 @@ const EN_STRINGS: AppStrings = {
   zoomLabel: (scale) => `Zoom ${scale}×`,
   showAllWalks: (count) => `Show All ${count} Walks`,
   showFewerWalks: 'Show Less',
+
+  accountCardTitle: 'Cloud Account & Sync',
+  accountGuestBadge: 'Guest Mode',
+  accountSetupBadge: 'Setup Needed',
+  accountGuestSubtitle:
+    'Using PawCast locally on this device. Sign in with email to sync your dogs, saved parks, and walk logs across devices.',
+  accountSetupNotice:
+    'Firebase project keys are not connected in this build yet. Guest Mode still works 100% locally — see FIREBASE_SETUP.md to turn on email sign-in.',
+  accountSignInCta: 'Sign In / Create Account',
+  accountSetupGuideCta: 'How to Enable Email Sign-In',
+  accountVerifiedBadge: 'Verified',
+  accountUnverifiedBadge: 'Unverified',
+  accountResendVerify: 'Verify Email',
+  accountVerifySent: 'Verification email sent — check your inbox.',
+  accountSyncSynced: 'Cloud Synced',
+  accountSyncSyncing: 'Syncing…',
+  accountSyncError: 'Sync Paused',
+  accountSyncIdle: 'Ready to Sync',
+  accountSyncNowBtn: 'Sync Now',
+  accountSignOutBtn: 'Sign Out',
+  accountDeleteBtn: 'Delete Account',
+  authTabSignIn: 'Sign In',
+  authTabSignUp: 'Create Account',
+  authTitleSignIn: 'Sign In to PawCast',
+  authTitleSignUp: 'Create PawCast Account',
+  authTitleReset: 'Reset Password',
+  authTitleDelete: 'Delete Account Permanently',
+  authEmailLabel: 'Email Address',
+  authEmailPlaceholder: 'you@example.com',
+  authPasswordLabel: 'Password',
+  authCurrentPasswordLabel: 'Confirm Current Password',
+  authPasswordPlaceholder: 'Enter your password',
+  authNewPasswordPlaceholder: 'At least 12 characters',
+  authShowPassword: 'Show',
+  authHidePassword: 'Hide',
+  authStrengthHint: 'Use at least 12 characters (passphrases welcome).',
+  authStrengthWeak: 'Too short or too common',
+  authStrengthGood: 'Good password',
+  authStrengthStrong: 'Strong password',
+  authForgotPasswordLink: 'Forgot password?',
+  authBackToSignIn: 'Back to Sign In',
+  authSubmitSignIn: 'Sign In',
+  authSubmitSignUp: 'Create Account & Sync',
+  authSubmitReset: 'Send Reset Link',
+  authSubmitDelete: 'Permanently Delete Account',
+  authWorkingStatus: 'Please wait…',
+  authResetSentNotice:
+    'If an account matches that email, a password reset link is on its way.',
+  authDeleteWarning:
+    'This permanently deletes your cloud profile, synced parks, and PawCast login. This cannot be undone.',
+  authCancelBtn: 'Cancel',
+  authPrivacyFootnote:
+    'Guest Mode always stays free & local. Your email is used strictly for sign-in and never shared.',
+  authSetupStepsTitle: 'Connect Your Firebase Project',
+  authSetupStepsBody:
+    '1. Create a free Firebase Spark project and enable Email/Password Authentication.\n2. Create a Cloud Firestore database and publish firestore.rules from this repo.\n3. Add EXPO_PUBLIC_FIREBASE_API_KEY, AUTH_DOMAIN, PROJECT_ID, and APP_ID to .env.local or GitHub Actions Variables, then rebuild.',
+  authErrNotConfigured: 'Firebase Auth is not configured for this build yet.',
+  authErrInvalidEmail: 'Please enter a valid email address.',
+  authErrWeakPassword:
+    'Choose a stronger password with at least 12 characters.',
+  authErrInvalidCredentials:
+    'Email or password didn’t match. Please try again.',
+  authErrTooManyRequests:
+    'Too many attempts. Please wait a minute before trying again.',
+  authErrRequiresRecentLogin:
+    'For security, please re-enter your current password to continue.',
+  authErrNetwork:
+    'Network request failed. Check your connection and try again.',
+  authErrGeneric:
+    'Unable to complete this request right now. Please try again.',
 };
 
 const ZH_STRINGS: AppStrings = {
@@ -680,6 +810,70 @@ const ZH_STRINGS: AppStrings = {
   zoomLabel: (scale) => `缩放 ${scale}×`,
   showAllWalks: (count) => `查看全部 ${count} 条记录`,
   showFewerWalks: '收起记录',
+
+  accountCardTitle: '云端账号与同步',
+  accountGuestBadge: '访客模式',
+  accountSetupBadge: '待配置',
+  accountGuestSubtitle:
+    '当前数据仅保存在本机。使用邮箱登录后，即可跨设备同步狗狗资料、收藏公园与遛狗打卡记录。',
+  accountSetupNotice:
+    '当前版本尚未连接 Firebase 项目参数，访客模式仍可完整使用；按 FIREBASE_SETUP.md 配置后即可开启邮箱登录。',
+  accountSignInCta: '邮箱登录 / 注册',
+  accountSetupGuideCta: '查看邮箱登录配置步骤',
+  accountVerifiedBadge: '已验证',
+  accountUnverifiedBadge: '未验证',
+  accountResendVerify: '验证邮箱',
+  accountVerifySent: '验证邮件已发出，请前往邮箱查收。',
+  accountSyncSynced: '已云端同步',
+  accountSyncSyncing: '同步中…',
+  accountSyncError: '同步暂缓',
+  accountSyncIdle: '等待同步',
+  accountSyncNowBtn: '立即同步',
+  accountSignOutBtn: '退出登录',
+  accountDeleteBtn: '注销账号',
+  authTabSignIn: '登录',
+  authTabSignUp: '注册账号',
+  authTitleSignIn: '登录 PawCast',
+  authTitleSignUp: '注册 PawCast 账号',
+  authTitleReset: '重置密码',
+  authTitleDelete: '永久注销账号',
+  authEmailLabel: '电子邮箱',
+  authEmailPlaceholder: 'name@example.com',
+  authPasswordLabel: '密码',
+  authCurrentPasswordLabel: '请输入当前密码以确认',
+  authPasswordPlaceholder: '请输入密码',
+  authNewPasswordPlaceholder: '至少 12 位字符',
+  authShowPassword: '显示',
+  authHidePassword: '隐藏',
+  authStrengthHint: '请使用至少 12 位字符（支持好记的长短语密码）。',
+  authStrengthWeak: '长度不足或过于简单',
+  authStrengthGood: '密码强度良好',
+  authStrengthStrong: '密码强度极佳',
+  authForgotPasswordLink: '忘记密码？',
+  authBackToSignIn: '返回登录',
+  authSubmitSignIn: '登录',
+  authSubmitSignUp: '注册并同步',
+  authSubmitReset: '发送重置链接',
+  authSubmitDelete: '确认永久注销',
+  authWorkingStatus: '处理中…',
+  authResetSentNotice:
+    '如果该邮箱已注册，我们已向其发送密码重置链接，请注意查收。',
+  authDeleteWarning:
+    '此操作将永久删除你的云端狗狗资料、同步收藏与 PawCast 登录账号，且无法恢复。',
+  authCancelBtn: '取消',
+  authPrivacyFootnote:
+    '访客模式永久免费且本地可用。你的邮箱仅用于账号登录与同步，绝不对外共享。',
+  authSetupStepsTitle: '连接你的 Firebase 项目',
+  authSetupStepsBody:
+    '1. 创建免费的 Firebase Spark 项目，并开启 Email/Password 登录。\n2. 创建 Cloud Firestore 数据库，并发布本仓库中的 firestore.rules。\n3. 在 .env.local 或 GitHub Actions Variables 中填入 4 项 EXPO_PUBLIC_FIREBASE_* 参数后重新部署。',
+  authErrNotConfigured: '当前版本尚未配置 Firebase 登录服务。',
+  authErrInvalidEmail: '请输入有效的电子邮箱地址。',
+  authErrWeakPassword: '请设置至少 12 位的更强密码，避免过于简单的组合。',
+  authErrInvalidCredentials: '邮箱或密码不正确，请检查后重试。',
+  authErrTooManyRequests: '尝试次数过多，请稍等片刻后再试。',
+  authErrRequiresRecentLogin: '为保障账号安全，请重新输入当前密码后再继续。',
+  authErrNetwork: '网络连接失败，请检查网络后重试。',
+  authErrGeneric: '暂时无法完成请求，请稍后再试。',
 };
 
 const ZH_BREED_LABELS: Record<string, string> = {
@@ -726,6 +920,31 @@ export function getQualityTierLabel(
 
 export function getStrings(language: AppLanguage): AppStrings {
   return language === 'zh' ? ZH_STRINGS : EN_STRINGS;
+}
+
+export function getAuthErrorMessage(
+  errorKey: AuthErrorKey | undefined,
+  language: AppLanguage
+): string {
+  const s = getStrings(language);
+  switch (errorKey) {
+    case 'not_configured':
+      return s.authErrNotConfigured;
+    case 'invalid_email':
+      return s.authErrInvalidEmail;
+    case 'weak_password':
+      return s.authErrWeakPassword;
+    case 'invalid_credentials':
+      return s.authErrInvalidCredentials;
+    case 'too_many_requests':
+      return s.authErrTooManyRequests;
+    case 'requires_recent_login':
+      return s.authErrRequiresRecentLogin;
+    case 'network_error':
+      return s.authErrNetwork;
+    default:
+      return s.authErrGeneric;
+  }
 }
 
 export function getLocaleTag(language: AppLanguage): string | undefined {

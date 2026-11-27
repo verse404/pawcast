@@ -366,6 +366,61 @@ test('Bilingual spot names, open status, and doorstep loops localize cleanly for
   assert.match(loopZh.surfaceNote, /人行道/);
 });
 
+// 9. Firebase Auth Security Validators, PII Masking & Anti-Enumeration
+test('Email & strong password validators enforce security bounds and reject weak/XSS inputs', () => {
+  assert.equal(validation.validateEmail('  Pudding.Owner@Example.COM ').valid, true);
+  assert.equal(validation.validateEmail('  Pudding.Owner@Example.COM ').normalized, 'pudding.owner@example.com');
+  assert.equal(validation.validateEmail('not-an-email').valid, false);
+  assert.equal(validation.validateEmail('<script>@example.com').valid, false);
+  assert.equal(validation.validateEmail(`${'a'.repeat(250)}@example.com`).valid, false);
+
+  assert.equal(validation.validateStrongPassword('short123').valid, false);
+  assert.equal(validation.validateStrongPassword('password1234').valid, false);
+  assert.equal(validation.validateStrongPassword('aaaaaaaaaaaa').valid, false);
+  assert.equal(validation.validateStrongPassword('a'.repeat(129)).valid, false);
+
+  const goodPwd = validation.validateStrongPassword('PuddingWalks26');
+  assert.equal(goodPwd.valid, true);
+  assert.equal(goodPwd.strength, 'good');
+
+  const strongPwd = validation.validateStrongPassword('Pudding loves shady Melbourne parks!');
+  assert.equal(strongPwd.valid, true);
+  assert.equal(strongPwd.strength, 'strong');
+});
+
+test('Email masking hides PII and Firebase auth errors prevent account enumeration', () => {
+  assert.equal(validation.maskEmail('alice.smith@gmail.com'), 'a***@gmail.com');
+  assert.equal(validation.maskEmail('a@b.co'), 'a***@b.co');
+  assert.equal(validation.maskEmail(null), '***');
+  assert.equal(validation.maskEmail('invalid'), '***');
+
+  // Anti-enumeration: user-not-found and wrong-password collapse to the same key
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/user-not-found'), 'invalid_credentials');
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/wrong-password'), 'invalid_credentials');
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/invalid-credential'), 'invalid_credentials');
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/email-already-in-use'), 'generic_error');
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/too-many-requests'), 'too_many_requests');
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/requires-recent-login'), 'requires_recent_login');
+  assert.equal(validation.mapFirebaseAuthErrorCode('auth/network-request-failed'), 'network_error');
+
+  for (const key of [
+    'not_configured',
+    'invalid_email',
+    'weak_password',
+    'invalid_credentials',
+    'too_many_requests',
+    'requires_recent_login',
+    'network_error',
+    'generic_error',
+  ]) {
+    const enMsg = translations.getAuthErrorMessage(key, 'en');
+    const zhMsg = translations.getAuthErrorMessage(key, 'zh');
+    assert.ok(enMsg.length > 8, `Missing EN error message for ${key}`);
+    assert.ok(/[\u4e00-\u9fff]/.test(zhMsg), `Missing ZH error message for ${key}`);
+    assert.ok(!zhMsg.includes('溜'), `Found forbidden 溜 in ZH auth error ${key}`);
+  }
+});
+
 console.log(`\nUnit Test Results: ${passed} passed, ${failed} failed.`);
 if (failed > 0) {
   process.exit(1);

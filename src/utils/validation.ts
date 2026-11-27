@@ -159,6 +159,141 @@ export function clampNumber(
   return raw;
 }
 
+export type AuthErrorKey =
+  | 'not_configured'
+  | 'invalid_email'
+  | 'weak_password'
+  | 'invalid_credentials'
+  | 'too_many_requests'
+  | 'requires_recent_login'
+  | 'network_error'
+  | 'generic_error';
+
+const BASIC_EMAIL_RE = /^[^\s@<>]{1,64}@[^\s@<>]{1,190}\.[^\s@<>]{2,63}$/;
+
+const COMMON_WEAK_PASSWORDS = new Set([
+  '123456789012',
+  '1234567890123',
+  'password1234',
+  'password12345',
+  'qwertyuiop12',
+  'iloveyou1234',
+  'letmein12345',
+  'admin1234567',
+  'welcome12345',
+  'pawcast12345',
+]);
+
+/**
+ * Validates and normalizes an email address without logging or reflecting angle brackets.
+ */
+export function validateEmail(raw: unknown): {
+  valid: boolean;
+  normalized: string;
+} {
+  if (typeof raw !== 'string') {
+    return { valid: false, normalized: '' };
+  }
+  const normalized = raw.replace(/[\u0000-\u001F\u007F]/g, '').trim().toLowerCase();
+  if (!normalized || normalized.length > 254 || !BASIC_EMAIL_RE.test(normalized)) {
+    return { valid: false, normalized };
+  }
+  return { valid: true, normalized };
+}
+
+/**
+ * Enforces strong password rules (min 12 chars, max 128 chars, all characters allowed
+ * including spaces & Unicode symbols, rejecting common breached patterns).
+ *
+ * TODO(security): Add server-side leaked password screening (HIBP k-anonymity API)
+ * when introducing a dedicated backend/BFF.
+ */
+export function validateStrongPassword(raw: unknown): {
+  valid: boolean;
+  strength: 'weak' | 'good' | 'strong';
+  reason?: 'too_short' | 'too_long' | 'common_password';
+} {
+  if (typeof raw !== 'string') {
+    return { valid: false, strength: 'weak', reason: 'too_short' };
+  }
+  if (raw.length < 12) {
+    return { valid: false, strength: 'weak', reason: 'too_short' };
+  }
+  if (raw.length > 128) {
+    return { valid: false, strength: 'weak', reason: 'too_long' };
+  }
+  const lower = raw.trim().toLowerCase();
+  if (
+    COMMON_WEAK_PASSWORDS.has(lower) ||
+    /^(.)\1{11,}$/.test(raw)
+  ) {
+    return { valid: false, strength: 'weak', reason: 'common_password' };
+  }
+  const uniqueChars = new Set(raw).size;
+  const strength =
+    raw.length >= 16 && uniqueChars >= 8
+      ? 'strong'
+      : raw.length >= 12 && uniqueChars >= 6
+        ? 'good'
+        : 'weak';
+  if (strength === 'weak') {
+    return { valid: false, strength: 'weak', reason: 'common_password' };
+  }
+  return { valid: true, strength };
+}
+
+/**
+ * Masks an email address before displaying it in UI badges or headers
+ * (e.g. `alice.smith@gmail.com` -> `a***@gmail.com`) to prevent PII exposure.
+ */
+export function maskEmail(raw: string | null | undefined): string {
+  if (!raw || typeof raw !== 'string') {
+    return '***';
+  }
+  const clean = raw.replace(/[\u0000-\u001F\u007F<>]/g, '').trim();
+  const atIdx = clean.indexOf('@');
+  if (atIdx <= 0 || atIdx >= clean.length - 1) {
+    return '***';
+  }
+  const local = clean.slice(0, atIdx);
+  const domain = clean.slice(atIdx + 1);
+  const visiblePrefix = local.length >= 2 ? local.slice(0, 1) : local.slice(0, 1);
+  return `${visiblePrefix}***@${domain}`;
+}
+
+/**
+ * Maps raw Firebase Auth error codes to generic, anti-enumeration error keys
+ * so attackers cannot probe whether a given email is registered.
+ */
+export function mapFirebaseAuthErrorCode(rawCode: unknown): AuthErrorKey {
+  const code = typeof rawCode === 'string' ? rawCode.toLowerCase() : '';
+  if (
+    code === 'auth/invalid-credential' ||
+    code === 'auth/user-not-found' ||
+    code === 'auth/wrong-password' ||
+    code === 'auth/invalid-login-credentials'
+  ) {
+    return 'invalid_credentials';
+  }
+  if (code === 'auth/invalid-email') {
+    return 'invalid_email';
+  }
+  if (code === 'auth/weak-password') {
+    return 'weak_password';
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'too_many_requests';
+  }
+  if (code === 'auth/requires-recent-login') {
+    return 'requires_recent_login';
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'network_error';
+  }
+  // Map `auth/email-already-in-use` and unknown codes to a generic message to avoid account enumeration
+  return 'generic_error';
+}
+
 /**
  * Builds an allow-listed HTTPS map directions URL for Apple Maps or Google Maps.
  * Returns null if coordinates are invalid or host verification fails.

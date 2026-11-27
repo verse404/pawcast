@@ -16,6 +16,7 @@ import {
 import { detectActiveRegion } from '../constants/auSuburbs';
 import { resolveParkPhotoUri } from '../constants/parkPhotos';
 import { BREED_PRESETS, SHANGHAI_PILOT_SPOTS } from '../constants/presets';
+import { useAuth } from '../context/AuthContext';
 import { useWalkPlanner } from '../context/WalkPlannerContext';
 import {
   formatDistance,
@@ -26,6 +27,7 @@ import {
   isWalkableSpotDistance,
 } from '../i18n/formatters';
 import {
+  getAuthErrorMessage,
   getBreedLabel,
   getLocaleTag,
   getStrings,
@@ -46,6 +48,7 @@ import {
   recropWebDogPhoto,
 } from '../utils/dogPhotoPicker';
 import { splitSpotDisplayName } from '../utils/spotGuide';
+import { AuthModal, AuthModalMode } from './AuthModal';
 import { DogAvatar } from './DogAvatar';
 import { ParkGuideSheet } from './ParkGuideSheet';
 import {
@@ -149,7 +152,15 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
     scoredPlaces,
     savedPlaceIds,
     toggleSavedPlace,
+    syncCloudNow,
   } = useWalkPlanner();
+  const {
+    user,
+    isFirebaseConfigured,
+    syncStatus,
+    resendVerification,
+    signOut,
+  } = useAuth();
   const t = getStrings(language);
   const loc = getLocaleTag(language);
 
@@ -176,6 +187,11 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
 
   const [nameDraft, setNameDraft] = useState(editingDog.name);
   const [showAllWalkLogs, setShowAllWalkLogs] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('signin');
+  const [verifyNotice, setVerifyNotice] = useState<string | null>(null);
+  const [isSendingVerify, setIsSendingVerify] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
   const [basePhotoUri, setBasePhotoUri] = useState<string | null>(
@@ -871,6 +887,216 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
             <Text style={styles.emptySavedText}>{t.emptyJournalHint}</Text>
           )}
         </View>
+
+        {/* 5. Optional Firebase Email Account & Cloud Sync */}
+        <View style={[styles.infoCard, ELEVATION.card]}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardTitleGroup}>
+              <View style={styles.cardIconTile}>
+                <UiIcon name="cloud" size={16} color={COLORS.brand} />
+              </View>
+              <Text style={styles.cardTitle}>{t.accountCardTitle}</Text>
+            </View>
+            <View
+              style={[
+                styles.accountStatusPill,
+                user
+                  ? syncStatus === 'error'
+                    ? styles.accountStatusPillWarn
+                    : styles.accountStatusPillActive
+                  : !isFirebaseConfigured
+                    ? styles.accountStatusPillWarn
+                    : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.accountStatusPillText,
+                  user
+                    ? syncStatus === 'error'
+                      ? styles.accountStatusPillTextWarn
+                      : styles.accountStatusPillTextActive
+                    : !isFirebaseConfigured
+                      ? styles.accountStatusPillTextWarn
+                      : null,
+                ]}
+              >
+                {user
+                  ? syncStatus === 'syncing'
+                    ? t.accountSyncSyncing
+                    : syncStatus === 'synced'
+                      ? t.accountSyncSynced
+                      : syncStatus === 'error'
+                        ? t.accountSyncError
+                        : t.accountSyncIdle
+                  : isFirebaseConfigured
+                    ? t.accountGuestBadge
+                    : t.accountSetupBadge}
+              </Text>
+            </View>
+          </View>
+
+          {user ? (
+            <View style={styles.accountSignedInBody}>
+              <View style={styles.accountEmailRow}>
+                <UiIcon name="mail" size={15} color={COLORS.brandDark} />
+                <Text style={styles.accountEmailText} numberOfLines={1}>
+                  {user.maskedEmail}
+                </Text>
+                <View
+                  style={[
+                    styles.verifyPill,
+                    user.emailVerified
+                      ? styles.verifyPillOk
+                      : styles.verifyPillPending,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.verifyPillText,
+                      user.emailVerified
+                        ? styles.verifyPillTextOk
+                        : styles.verifyPillTextPending,
+                    ]}
+                  >
+                    {user.emailVerified
+                      ? t.accountVerifiedBadge
+                      : t.accountUnverifiedBadge}
+                  </Text>
+                </View>
+              </View>
+
+              {verifyNotice ? (
+                <Text style={styles.verifyNoticeText}>{verifyNotice}</Text>
+              ) : null}
+
+              <View style={styles.accountActionsRow}>
+                <Pressable
+                  onPress={() => {
+                    syncCloudNow().catch(() => {});
+                  }}
+                  disabled={syncStatus === 'syncing'}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.accountActionPillPrimary,
+                    syncStatus === 'syncing' && styles.btnDisabled,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.accountActionPillPrimaryText}>
+                    {syncStatus === 'syncing'
+                      ? t.accountSyncSyncing
+                      : t.accountSyncNowBtn}
+                  </Text>
+                </Pressable>
+
+                {!user.emailVerified ? (
+                  <Pressable
+                    onPress={async () => {
+                      if (isSendingVerify) return;
+                      setIsSendingVerify(true);
+                      setVerifyNotice(null);
+                      try {
+                        const res = await resendVerification();
+                        setVerifyNotice(
+                          res.ok
+                            ? t.accountVerifySent
+                            : getAuthErrorMessage(res.errorKey, language)
+                        );
+                      } finally {
+                        setIsSendingVerify(false);
+                      }
+                    }}
+                    disabled={isSendingVerify}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.accountActionPill,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.accountActionPillText}>
+                      {t.accountResendVerify}
+                    </Text>
+                  </Pressable>
+                ) : null}
+
+                <Pressable
+                  onPress={async () => {
+                    if (isSigningOut) return;
+                    setIsSigningOut(true);
+                    try {
+                      await signOut();
+                    } finally {
+                      setIsSigningOut(false);
+                    }
+                  }}
+                  disabled={isSigningOut}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.accountActionPill,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.accountActionPillText}>
+                    {t.accountSignOutBtn}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    setAuthModalMode('delete');
+                    setAuthModalOpen(true);
+                  }}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.accountDeletePill,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.accountDeletePillText}>
+                    {t.accountDeleteBtn}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptySavedBox}>
+              <Text style={styles.emptySavedText}>
+                {isFirebaseConfigured
+                  ? t.accountGuestSubtitle
+                  : t.accountSetupNotice}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setAuthModalMode('signin');
+                  setAuthModalOpen(true);
+                }}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.accountCtaBtn,
+                  !isFirebaseConfigured && styles.accountCtaBtnSubtle,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <UiIcon
+                  name={isFirebaseConfigured ? 'mail' : 'lock'}
+                  size={15}
+                  color={isFirebaseConfigured ? '#FFFFFF' : COLORS.brandDark}
+                />
+                <Text
+                  style={[
+                    styles.accountCtaBtnText,
+                    !isFirebaseConfigured && styles.accountCtaBtnTextSubtle,
+                  ]}
+                >
+                  {isFirebaseConfigured
+                    ? t.accountSignInCta
+                    : t.accountSetupGuideCta}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* V3 Local Insider Sheet when Tapping Any Saved Spot */}
@@ -887,6 +1113,13 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
               }
             : undefined
         }
+      />
+
+      {/* Optional Firebase Email Sign-In / Account Management Sheet */}
+      <AuthModal
+        visible={authModalOpen}
+        initialMode={authModalMode}
+        onClose={() => setAuthModalOpen(false)}
       />
 
       {/* Slide-Up Edit Profile & Photo Sheet */}
@@ -2133,6 +2366,152 @@ const styles = StyleSheet.create({
     fontFamily: UI_FONT_FAMILY,
     fontSize: 11,
     color: COLORS.textSecondary,
+  },
+  accountStatusPill: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+  },
+  accountStatusPillActive: {
+    backgroundColor: COLORS.brandLight,
+    borderColor: COLORS.brand,
+  },
+  accountStatusPillWarn: {
+    backgroundColor: COLORS.cautionBg,
+    borderColor: COLORS.cautionBorder,
+  },
+  accountStatusPillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+  },
+  accountStatusPillTextActive: {
+    color: COLORS.brandDark,
+  },
+  accountStatusPillTextWarn: {
+    color: COLORS.cautionText,
+  },
+  accountSignedInBody: {
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    padding: 12,
+    gap: 10,
+  },
+  accountEmailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  accountEmailText: {
+    fontFamily: UI_FONT_FAMILY,
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  verifyPill: {
+    borderRadius: 999,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  verifyPillOk: {
+    backgroundColor: COLORS.idealBg,
+  },
+  verifyPillPending: {
+    backgroundColor: COLORS.cautionBg,
+  },
+  verifyPillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  verifyPillTextOk: {
+    color: COLORS.brandDark,
+  },
+  verifyPillTextPending: {
+    color: COLORS.cautionText,
+  },
+  verifyNoticeText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.brandDark,
+  },
+  accountActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+  accountActionPillPrimary: {
+    backgroundColor: COLORS.brand,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+  },
+  accountActionPillPrimaryText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  accountActionPill: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  accountActionPillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  accountDeletePill: {
+    backgroundColor: COLORS.avoidBg,
+    borderWidth: 1,
+    borderColor: COLORS.avoidBorder,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  accountDeletePillText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.avoidText,
+  },
+  accountCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    backgroundColor: COLORS.brand,
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  accountCtaBtnSubtle: {
+    backgroundColor: COLORS.brandLight,
+    borderWidth: 1,
+    borderColor: COLORS.brand,
+  },
+  accountCtaBtnText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  accountCtaBtnTextSubtle: {
+    color: COLORS.brandDark,
+  },
+  btnDisabled: {
+    opacity: 0.6,
   },
   pressed: {
     opacity: 0.84,

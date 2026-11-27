@@ -53,6 +53,7 @@ import {
   sanitizeDogName,
   sanitizeText,
 } from '../utils/validation';
+import { useAuth } from './AuthContext';
 
 /**
  * Note on client storage security:
@@ -144,6 +145,7 @@ interface WalkPlannerContextValue {
 
   scoredPlaces: ScoredPlace[];
   hasCuratedPlacesFallback: boolean;
+  syncCloudNow: () => Promise<boolean>;
 }
 
 const WalkPlannerContext = createContext<WalkPlannerContextValue | undefined>(
@@ -390,6 +392,9 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     string | null
   >(null);
   const [hydrated, setHydrated] = useState(false);
+  const { user, pullCloudProfile, pushCloudProfile } = useAuth();
+  const pulledUidRef = useRef<string | null>(null);
+  const suppressNextCloudPushRef = useRef(false);
 
   const [forecast, setForecast] = useState<ForecastBundle | null>(null);
   const [isOfflineForecast, setIsOfflineForecast] = useState(false);
@@ -583,6 +588,181 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
     walkLogs,
     location,
   ]);
+
+  const latestSyncStateRef = useRef({
+    units,
+    language,
+    savedPlaceIds,
+    spotNotes,
+    dogs,
+    activeDogIds,
+    walkLogs,
+    location,
+  });
+  latestSyncStateRef.current = {
+    units,
+    language,
+    savedPlaceIds,
+    spotNotes,
+    dogs,
+    activeDogIds,
+    walkLogs,
+    location,
+  };
+
+  // Pull signed-in user's cloud profile from Firestore once per sign-in session
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!user?.uid) {
+      pulledUidRef.current = null;
+      return;
+    }
+    if (pulledUidRef.current === user.uid) {
+      return;
+    }
+    let active = true;
+    const targetUid = user.uid;
+    pulledUidRef.current = targetUid;
+
+    (async () => {
+      const cloud = await pullCloudProfile();
+      if (!active || pulledUidRef.current !== targetUid) return;
+
+      if (cloud) {
+        suppressNextCloudPushRef.current = true;
+        if (cloud.units === 'metric' || cloud.units === 'imperial') {
+          setUnits(cloud.units);
+        }
+        if (cloud.language === 'en' || cloud.language === 'zh') {
+          setLanguage(cloud.language);
+        }
+        if (Array.isArray(cloud.savedPlaceIds)) {
+          setSavedPlaceIds(
+            cloud.savedPlaceIds
+              .filter((x): x is string => typeof x === 'string')
+              .map((x) => sanitizeText(x, 48))
+              .filter(Boolean)
+              .slice(0, 50)
+          );
+        }
+        if (cloud.spotNotes && typeof cloud.spotNotes === 'object') {
+          const rawNotes = cloud.spotNotes as Record<string, unknown>;
+          const cleanNotes: Record<string, string> = {};
+          Object.keys(rawNotes)
+            .slice(0, 60)
+            .forEach((k) => {
+              const safeKey = sanitizeText(k, 48);
+              const safeVal = sanitizeText(rawNotes[k], 100);
+              if (safeKey && safeVal) {
+                cleanNotes[safeKey] = safeVal;
+              }
+            });
+          setSpotNotes(cleanNotes);
+        }
+        if (Array.isArray(cloud.dogs) && cloud.dogs.length > 0) {
+          const localAvatarById = new Map(
+            latestSyncStateRef.current.dogs.map((d) => [
+              d.id || 'dog-primary',
+              d.customPhotoUri ?? null,
+            ])
+          );
+          const parsedDogs = cloud.dogs
+            .slice(0, MAX_HOUSEHOLD_DOGS)
+            .map((d, idx) => {
+              const fallbackId = idx === 0 ? 'dog-primary' : `dog-${idx + 1}`;
+              const parsed = parseStoredDog(d, fallbackId);
+              if (!parsed.customPhotoUri) {
+                const preserved = localAvatarById.get(parsed.id || fallbackId);
+                if (preserved) {
+                  return { ...parsed, customPhotoUri: preserved };
+                }
+              }
+              return parsed;
+            });
+          setDogs(parsedDogs);
+          const validIds = new Set(parsedDogs.map((d) => d.id || 'dog-primary'));
+          if (Array.isArray(cloud.activeDogIds)) {
+            const cleanActive = cloud.activeDogIds.filter(
+              (x): x is string => typeof x === 'string' && validIds.has(x)
+            );
+            setActiveDogIds(
+              cleanActive.length > 0
+                ? cleanActive
+                : [parsedDogs[0].id || 'dog-primary']
+            );
+          } else {
+            setActiveDogIds([parsedDogs[0].id || 'dog-primary']);
+          }
+        }
+        if (Array.isArray(cloud.walkLogs)) {
+          setWalkLogs(parseStoredWalkLogs(cloud.walkLogs));
+        }
+        if (cloud.location) {
+          setLocationState(parseStoredLocation(cloud.location));
+        }
+      } else {
+        // First sign-in on a fresh account: back up the user's current local profile
+        const snap = latestSyncStateRef.current;
+        await pushCloudProfile({
+          schemaVersion: 1,
+          updatedAtMs: Date.now(),
+          ...snap,
+        });
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [hydrated, user?.uid, pullCloudProfile, pushCloudProfile]);
+
+  // Debounced background cloud sync whenever profile/saved parks/walk logs change while signed in
+  useEffect(() => {
+    if (!hydrated || !user?.uid || pulledUidRef.current !== user.uid) {
+      return;
+    }
+    if (suppressNextCloudPushRef.current) {
+      suppressNextCloudPushRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      pushCloudProfile({
+        schemaVersion: 1,
+        updatedAtMs: Date.now(),
+        units,
+        language,
+        savedPlaceIds,
+        spotNotes,
+        dogs,
+        activeDogIds,
+        walkLogs,
+        location,
+      }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [
+    hydrated,
+    user?.uid,
+    units,
+    language,
+    savedPlaceIds,
+    spotNotes,
+    dogs,
+    activeDogIds,
+    walkLogs,
+    location,
+    pushCloudProfile,
+  ]);
+
+  const syncCloudNow = useCallback(async (): Promise<boolean> => {
+    if (!user?.uid) return false;
+    const snap = latestSyncStateRef.current;
+    return pushCloudProfile({
+      schemaVersion: 1,
+      updatedAtMs: Date.now(),
+      ...snap,
+    });
+  }, [user?.uid, pushCloudProfile]);
 
   const fetchSeqRef = useRef(0);
 
@@ -1124,6 +1304,7 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       selectedHour,
       scoredPlaces,
       hasCuratedPlacesFallback,
+      syncCloudNow,
     }),
     [
       location,
@@ -1172,6 +1353,7 @@ export const WalkPlannerProvider: React.FC<{ children: React.ReactNode }> = ({
       selectedHour,
       scoredPlaces,
       hasCuratedPlacesFallback,
+      syncCloudNow,
     ]
   );
 

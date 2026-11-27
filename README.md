@@ -25,12 +25,14 @@ PawCast is a streamlined, answer-first cross-platform **iOS, Android, and Web (P
   - Enforces **seasonal summer daylight-saving beach curfews** (`Oct–Mar`), **weekend beach curfews** (e.g. Sirius Cove Mosman), daily timed off-leash hours, and Shanghai `狗证` rules, with 1-tap Google/Apple Maps gate routing and SMS/WhatsApp/WeChat (`微信约遛`) invite cards.
 - **Tab 3 — `🐶 Pudding` (`DogProfileScreen.tsx`)**:
   - **Botanical Pet Passport & Multi-Dog Pack Safety**: Defaults to **Pudding** (custom white Maltipoo SVG avatar) with Aussie & global breed presets (`White Maltipoo`, `Cavoodle`, `Kelpie`, `Aussie Staffy`, `Golden`, `Corgi`, `Frenchie`, `Husky`, `Shiba`), custom photo upload/crop/zoom, multi-dog pack mode, cross-city `Saved Regulars`, expandable Walk Streak Journal, and `Metric (°C · km)` / `Imperial (°F · mi)` + `EN / 简体中文` preferences.
+  - **Optional Firebase Email Sign-In & Cloud Sync (`AuthModal.tsx`, `AuthContext.tsx`, `authService.ts`)**: Zero-friction local Guest Mode by default, with opt-in Firebase Email/Password sign-in, password reset, email verification, automatic per-user Cloud Firestore profile sync (`users/{uid}/pawcast/profile`), and re-authenticated in-app account deletion.
 
 ## Security & Verification Notes
 
+- **Firebase Auth & Cloud Sync Hardening**: Reads Firebase config strictly from `EXPO_PUBLIC_FIREBASE_*` environment variables (never hardcoded), enforces strong passwords (`12–128` chars), masks displayed emails (`a***@domain.com`), maps auth failures to anti-enumeration messages, uses IndexedDB/in-memory session persistence on Web (never `localStorage`/`sessionStorage`), and isolates cloud data server-side via [`firestore.rules`](./firestore.rules).
 - **Input & Storage Hardening**: All external API payloads, search queries, dog names, and per-spot notes are sanitized via `src/utils/validation.ts`. Uploaded dog portraits enforce a `5 MB` cap, binary magic-byte verification (`JPEG`/`PNG`/`WebP`), and `256×256` canvas re-encoding (stripping EXIF GPS metadata).
 - **Allow-Listed Navigation & Image Hosts**: Map directions (`www.google.com`, `maps.apple.com`) and remote park photos (`parkPhotos.ts`) strictly validate `https://` URLs against explicit host allow-lists, with WGS-84 → GCJ-02 alignment for Mainland China.
-- **HTTP Security Headers**: Local production static server binds strictly to `127.0.0.1` and serves `Content-Security-Policy`, `Permissions-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `Referrer-Policy: strict-origin-when-cross-origin`.
+- **HTTP Security Headers**: Static hosting configs (`vercel.json`, `public/_headers`) serve strict `Content-Security-Policy`, `Permissions-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `Referrer-Policy: strict-origin-when-cross-origin`.
 
 ## Getting Started
 
@@ -45,5 +47,6 @@ npx expo start
   npx tsc --noEmit
   npm test
   ```
+- **Firebase Email Sign-In Setup**: See [`FIREBASE_SETUP.md`](./FIREBASE_SETUP.md), [`.env.example`](./.env.example), and [`firestore.rules`](./firestore.rules).
 - **Public Web Deployment**: See `DEPLOY_WEB.md` (`vercel.json`, Cloudflare Pages `public/_headers` + `public/_redirects`, and shareable `#spot=` / `#suburb=` deep links).
 - **iOS App Store Build & Submission**: See `APP_STORE_SUBMISSION.md` and `PRIVACY_POLICY.md` for EAS Build / TestFlight commands (`eas build --platform ios --profile production`), App Store Connect metadata, and privacy manifest details.

@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// PawCast Cloud Firestore Security Rules
+// Enforces strict per-user isolation (`request.auth.uid == userId`),
+// explicit field allow-listing, and bounded collection sizes.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/pawcast/profile {
+      allow read, delete: if request.auth != null
+        && request.auth.uid == userId;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          'schemaVersion',
+          'updatedAtMs',
+          'units',
+          'language',
+          'savedPlaceIds',
+          'spotNotes',
+          'dogs',
+          'activeDogIds',
+          'walkLogs',
+          'location'
+        ])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.updatedAtMs is int
+        && request.resource.data.units in ['metric', 'imperial']
+        && request.resource.data.language in ['en', 'zh']
+        && request.resource.data.dogs is list
+        && request.resource.data.dogs.size() >= 1
+        && request.resource.data.dogs.size() <= 5
+        && request.resource.data.activeDogIds is list
+        && request.resource.data.activeDogIds.size() <= 5
+        && request.resource.data.savedPlaceIds is list
+        && request.resource.data.savedPlaceIds.size() <= 50
+        && request.resource.data.walkLogs is list
+        && request.resource.data.walkLogs.size() <= 100
+        && request.resource.data.spotNotes is map
+        && request.resource.data.spotNotes.size() <= 60
+        && request.resource.data.location is map;
+    }
+
+    // Default-deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

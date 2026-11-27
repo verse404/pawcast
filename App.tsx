@@ -18,6 +18,7 @@ import { ExploreMapScreen } from './src/components/ExploreMapScreen';
 import { LocationModal } from './src/components/LocationModal';
 import { UiIcon } from './src/components/UiIcons';
 import { WalkNowScreen } from './src/components/WalkNowScreen';
+import { AuthProvider } from './src/context/AuthContext';
 import {
   useWalkPlanner,
   WalkPlannerProvider,
@@ -497,9 +498,11 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <SafeAreaProvider>
-        <WalkPlannerProvider>
-          <MainShell />
-        </WalkPlannerProvider>
+        <AuthProvider>
+          <WalkPlannerProvider>
+            <MainShell />
+          </WalkPlannerProvider>
+        </AuthProvider>
       </SafeAreaProvider>
     </AppErrorBoundary>
   );
