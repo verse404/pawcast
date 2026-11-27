@@ -418,6 +418,9 @@ export interface AppStrings {
   walkLoggedByPrefix: string;
   pinnedAreasHeader: string;
   pinThisAreaShort: string;
+  homeSignInBannerTitle: string;
+  homeSignInBannerCta: string;
+  profileSignInShort: string;
 
   // Photo Memory Map Tab
   photosCountSummary: (photos: string, places: string) => string;
@@ -887,6 +890,9 @@ const EN_STRINGS: AppStrings = {
   walkLoggedByPrefix: 'by',
   pinnedAreasHeader: 'Pinned Areas',
   pinThisAreaShort: 'Pin Current',
+  homeSignInBannerTitle: 'Sync your dogs, saved parks & walk logs across devices',
+  homeSignInBannerCta: 'Sign In',
+  profileSignInShort: 'Sign In',
 
   photosCountSummary: (photos, places) =>
     `${photos} Photos · ${places} Spots`,
@@ -1338,6 +1344,9 @@ const ZH_STRINGS: AppStrings = {
   walkLoggedByPrefix: '记录人',
   pinnedAreasHeader: '常用片区',
   pinThisAreaShort: '固定当前',
+  homeSignInBannerTitle: '邮箱登录，跨设备同步狗狗资料、收藏公园与遛狗记录',
+  homeSignInBannerCta: '登录',
+  profileSignInShort: '登录',
 
   photosCountSummary: (photos, places) => `${photos} 张 · ${places} 处`,
   photosViewMap: '地图',

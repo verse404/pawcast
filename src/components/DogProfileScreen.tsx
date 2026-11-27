@@ -487,109 +487,167 @@ export const DogProfileScreen: React.FC<DogProfileScreenProps> = ({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* 0. Household Multi-Dog Pack Switcher */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.packBarContent}
-        >
-          {dogs.map((pup) => {
-            const pupId = pup.id || 'dog-primary';
-            const isActive = activeDogIds.includes(pupId);
-            return (
+        {/* 0. Household Multi-Dog Pack Switcher + Far-Right Sign-In / Account Icon */}
+        <View style={styles.packBarOuterRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.packBarScroll}
+            contentContainerStyle={styles.packBarContent}
+          >
+            {dogs.map((pup) => {
+              const pupId = pup.id || 'dog-primary';
+              const isActive = activeDogIds.includes(pupId);
+              return (
+                <Pressable
+                  key={pupId}
+                  onPress={() => {
+                    if (isPackMode) {
+                      toggleWalkDog(pupId);
+                    } else {
+                      selectSingleDog(pupId);
+                      setEditingDogId(pupId);
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  style={[
+                    styles.packChip,
+                    isActive && styles.packChipActive,
+                  ]}
+                >
+                  <DogAvatar
+                    breedId={pup.breedId}
+                    customUri={pup.customPhotoUri}
+                    size={22}
+                  />
+                  <Text
+                    style={[
+                      styles.packChipText,
+                      isActive && styles.packChipTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {pup.name}
+                  </Text>
+                  {isPackMode && isActive ? (
+                    <UiIcon name="check" size={12} color={COLORS.brandDark} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+
+            {dogs.length > 1 ? (
               <Pressable
-                key={pupId}
                 onPress={() => {
                   if (isPackMode) {
-                    toggleWalkDog(pupId);
+                    selectSingleDog(activeDogs[0]?.id || dogs[0]?.id || 'dog-primary');
                   } else {
-                    selectSingleDog(pupId);
-                    setEditingDogId(pupId);
+                    dogs.forEach((d) => {
+                      const id = d.id || 'dog-primary';
+                      if (!activeDogIds.includes(id)) {
+                        toggleWalkDog(id);
+                      }
+                    });
                   }
                 }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
                 style={[
-                  styles.packChip,
-                  isActive && styles.packChipActive,
+                  styles.packActionPill,
+                  isPackMode && styles.packActionPillActive,
                 ]}
               >
-                <DogAvatar
-                  breedId={pup.breedId}
-                  customUri={pup.customPhotoUri}
-                  size={22}
+                <UiIcon
+                  name="paw"
+                  size={12}
+                  color={isPackMode ? '#FFFFFF' : COLORS.brandDark}
                 />
                 <Text
                   style={[
-                    styles.packChipText,
-                    isActive && styles.packChipTextActive,
+                    styles.packActionPillText,
+                    isPackMode && styles.packActionPillTextActive,
                   ]}
-                  numberOfLines={1}
                 >
-                  {pup.name}
+                  {isPackMode ? t.walkingPackActive : t.walkTogetherBtn}
                 </Text>
-                {isPackMode && isActive ? (
-                  <UiIcon name="check" size={12} color={COLORS.brandDark} />
-                ) : null}
               </Pressable>
-            );
-          })}
+            ) : null}
 
-          {dogs.length > 1 ? (
-            <Pressable
-              onPress={() => {
-                if (isPackMode) {
-                  selectSingleDog(activeDogs[0]?.id || dogs[0]?.id || 'dog-primary');
-                } else {
-                  dogs.forEach((d) => {
-                    const id = d.id || 'dog-primary';
-                    if (!activeDogIds.includes(id)) {
-                      toggleWalkDog(id);
-                    }
-                  });
-                }
-              }}
-              style={[
-                styles.packActionPill,
-                isPackMode && styles.packActionPillActive,
-              ]}
-            >
-              <UiIcon
-                name="paw"
-                size={12}
-                color={isPackMode ? '#FFFFFF' : COLORS.brandDark}
-              />
-              <Text
-                style={[
-                  styles.packActionPillText,
-                  isPackMode && styles.packActionPillTextActive,
-                ]}
+            {dogs.length < 5 ? (
+              <Pressable
+                onPress={() => {
+                  const createdId = addDog(
+                    dogs.length === 1 ? 'frenchie' : 'golden'
+                  );
+                  setEditingDogId(createdId);
+                  setBasePhotoUri(null);
+                  setZoomStepIdx(0);
+                  setPhotoNotice(null);
+                  setEditModalOpen(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Add another dog to household"
+                style={styles.addPupPill}
               >
-                {isPackMode ? t.walkingPackActive : t.walkTogetherBtn}
-              </Text>
-            </Pressable>
-          ) : null}
+                <Text style={styles.addPupPillText}>{t.addPupBtn}</Text>
+              </Pressable>
+            ) : null}
+          </ScrollView>
 
-          {dogs.length < 5 ? (
+          {user ? (
             <Pressable
               onPress={() => {
-                const createdId = addDog(
-                  dogs.length === 1 ? 'frenchie' : 'golden'
-                );
-                setEditingDogId(createdId);
-                setBasePhotoUri(null);
-                setZoomStepIdx(0);
-                setPhotoNotice(null);
-                setEditModalOpen(true);
+                setMemberHubTab('profile');
+                setMemberHubOpen(true);
               }}
               accessibilityRole="button"
-              accessibilityLabel="Add another dog to household"
-              style={styles.addPupPill}
+              accessibilityLabel={
+                memberProfile.displayName.trim() ||
+                user.displayName ||
+                t.memberHubTitle
+              }
+              style={({ pressed }) => [
+                styles.packAccountAvatarBtn,
+                pressed && styles.pressed,
+              ]}
             >
-              <Text style={styles.addPupPillText}>{t.addPupBtn}</Text>
+              {memberProfile.avatarUri ? (
+                <Image
+                  source={{ uri: memberProfile.avatarUri }}
+                  style={styles.packAccountAvatarImg}
+                />
+              ) : (
+                <Text style={styles.packAccountAvatarInitial}>
+                  {(
+                    memberProfile.displayName.trim() ||
+                    user.displayName ||
+                    'P'
+                  )
+                    .slice(0, 1)
+                    .toUpperCase()}
+                </Text>
+              )}
+              <View style={styles.packAccountOnlineDot} />
             </Pressable>
-          ) : null}
-        </ScrollView>
+          ) : (
+            <Pressable
+              onPress={() => {
+                setAuthModalMode('signin');
+                setAuthModalOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t.profileSignInShort}
+              style={({ pressed }) => [
+                styles.packSignInBtn,
+                pressed && styles.pressed,
+              ]}
+            >
+              <UiIcon name="signIn" size={14} color="#FFFFFF" />
+              <Text style={styles.packSignInBtnText}>
+                {t.profileSignInShort}
+              </Text>
+            </Pressable>
+          )}
+        </View>
 
         {/* 1. Botanical Pet Passport Card */}
         <View style={[styles.passportCard, ELEVATION.cardHero]}>
@@ -2079,11 +2137,71 @@ const styles = StyleSheet.create({
     paddingBottom: 26,
     gap: 13,
   },
+  packBarOuterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  packBarScroll: {
+    flex: 1,
+  },
   packBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     paddingVertical: 2,
+    paddingEnd: 4,
+  },
+  packSignInBtn: {
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.brand,
+    borderRadius: 999,
+    paddingVertical: 6.5,
+    paddingHorizontal: 11,
+  },
+  packSignInBtnText: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  packAccountAvatarBtn: {
+    flexShrink: 0,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.brandLight,
+    borderWidth: 1.5,
+    borderColor: COLORS.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  packAccountAvatarImg: {
+    width: 31,
+    height: 31,
+    borderRadius: 15.5,
+  },
+  packAccountAvatarInitial: {
+    fontFamily: UI_FONT_FAMILY,
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: COLORS.brandDark,
+  },
+  packAccountOnlineDot: {
+    position: 'absolute',
+    right: -1,
+    bottom: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.brand,
+    borderWidth: 1.5,
+    borderColor: COLORS.background,
   },
   packChip: {
     flexDirection: 'row',
